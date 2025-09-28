@@ -1,0 +1,55 @@
+#include <stdio.h>
+
+// Global constant
+const int a = 7;
+
+// Global array
+int b[2]={1,2};
+
+// Recursive function to calculate sum from 1 to n
+int recursive_sum(int n) {
+    if (n == 0) {
+        return 0;
+    }
+    return n + recursive_sum(n - 1);
+}
+
+// A simple scanf wrapper to mimic getint()
+int getint() {
+    int val;
+    scanf("%d", &val);
+    return val;
+}
+
+// A simple printf wrapper to mimic putint()
+void putint(int val) {
+    printf("%d\n", val);
+}
+
+// Main function
+int main() {
+    int n;
+    int i;
+    int res;
+
+    // 1. Get input
+    n = getint();
+
+    // 2. Use if-else based on input
+    if (n % 2 == 1) {
+        // If n is odd, calculate recursive sum
+        res = recursive_sum(n) - b[0];        
+        putint(res);
+    } else {
+        // If n is even, calculate factorial
+        i = 1;
+        while(i<b[1]){
+            i = i + 1;
+        }
+        i = a * i;
+        res = recursive_sum(n) / i;
+        putint(res);
+    }
+
+    return 0;
+}
