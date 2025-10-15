@@ -62,6 +62,7 @@
 // 对于一些需要 "值" 的 token，可以在前面加上 <type> 来指定值的类型
 // 例如，%token <int> INT_CONST 定义了一个名为 INT_CONST
 %token <int> INT_CONST
+%token <float> FLOAT_CONST
 %token <std::string> STR_CONST ERR_TOKEN SLASH_COMMENT
 
 %token <std::string> IDENT 
@@ -244,6 +245,7 @@ FOR_STMT:
 IF_STMT:
     /* TODO(Lab2): Implement if statement rule */
     ;
+
 
 //TODO(Lab2)：按照你补充的语句类型，实现这些语句的处理
 
@@ -434,6 +436,9 @@ LEFT_VAL_EXPR:
 
 LITERAL_EXPR:
     INT_CONST {
+        $$ = new LiteralExpr($1, @1.begin.line, @1.begin.column);
+    }
+    | FLOAT_CONST {
         $$ = new LiteralExpr($1, @1.begin.line, @1.begin.column);
     }
     //TODO(Lab2): 处理更多字面量

@@ -1,0 +1,17 @@
+// Test case for integer constants
+// This file includes decimal, octal, and hexadecimal integer constants
+
+// Decimal integers
+123
+0
+456789
+
+// Octal integers
+0123
+0777
+0000
+
+// Hexadecimal integers
+0x1A3F
+0XABCDEF
+0x0
