@@ -19,6 +19,16 @@ namespace FE
             T_FLOAT,
             T_DOUBLE,
             T_STRING,
+            T_PLUS,
+            T_MINUS,
+            T_STAR,
+            T_DIV,
+            T_ASSIGN,
+            T_EQ,
+            T_LE,
+            T_LT,
+            T_GE,
+            T_GT,
             T_NONE
         } type;
         union

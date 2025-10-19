@@ -78,6 +78,16 @@ TODO(Lab1)：参考SysY2022的定义，实现更多的词法，如浮点数、�
 
 ";"                 { RETT(SEMICOLON, loc) }
 ","                 { RETT(COMMA, loc) }
+"=="                { RETT(EQ, loc) }
+"<="                { RETT(LE, loc) }
+">="                { RETT(GE, loc) }
+"<"                 { RETT(LT, loc) }
+">"                 { RETT(GT, loc) }
+"="                 { RETT(ASSIGN, loc) }
+"+"                 { RETT(PLUS, loc) }
+"-"                 { RETT(MINUS, loc) }
+"*"                 { RETT(STAR, loc) }
+"/"                 { RETT(DIV, loc) }
 
 "//".*              { 
     auto str = std::string(yytext);
@@ -97,6 +107,39 @@ TODO(Lab1)：参考SysY2022的定义，实现更多的词法，如浮点数、�
     std::string str(yytext);
     if (!str.empty()) str = str.substr(1, str.size() - 2);
     return YaccParser::make_STR_CONST(str, loc); 
+}
+
+[0-9]+\.([0-9]*)?([eE][+-]?[0-9]+)? {
+    try {
+        float result = convertToFloatDec(yytext);
+        return YaccParser::make_FLOAT_CONST(result, loc);
+    } catch (const std::exception& e) {
+        _parser.reportError(loc, std::string("Error parsing decimal float: ") + e.what());
+        auto str = std::string(yytext);
+        return YaccParser::make_ERR_TOKEN(str, loc);
+    }
+}
+
+\.[0-9]+([eE][+-]?[0-9]+)? {
+    try {
+        float result = convertToFloatDec(yytext);
+        return YaccParser::make_FLOAT_CONST(result, loc);
+    } catch (const std::exception& e) {
+        _parser.reportError(loc, std::string("Error parsing decimal float: ") + e.what());
+        auto str = std::string(yytext);
+        return YaccParser::make_ERR_TOKEN(str, loc);
+    }
+}
+
+0[xX][0-9a-fA-F]+(\.[0-9a-fA-F]*)?[pP][+-]?[0-9]+ {
+    try {
+        float result = convertToFloatDec(yytext);
+        return YaccParser::make_FLOAT_CONST(result, loc);
+    } catch (const std::exception& e) {
+        _parser.reportError(loc, std::string("Error parsing hexadecimal float: ") + e.what());
+        auto str = std::string(yytext);
+        return YaccParser::make_ERR_TOKEN(str, loc);
+    }
 }
 
 [0][xX][0-9a-fA-F]+ {
@@ -134,41 +177,6 @@ TODO(Lab1)：参考SysY2022的定义，实现更多的词法，如浮点数、�
         return YaccParser::make_INT_CONST(static_cast<int>(result), loc);
     } catch (const std::exception& e) {
         _parser.reportError(loc, std::string("Error parsing decimal int: ") + e.what());
-        auto str = std::string(yytext);
-        return YaccParser::make_ERR_TOKEN(str, loc);
-    }
-}
-
-
-
-[0-9]+(\.[0-9]*)?([eE][+-]?[0-9]+)? {
-    try {
-        float result = convertToFloatDec(yytext);
-        return YaccParser::make_FLOAT_CONST(static_cast<float>(result), loc);
-    } catch (const std::exception& e) {
-        _parser.reportError(loc, std::string("Error parsing decimal float: ") + e.what());
-        auto str = std::string(yytext);
-        return YaccParser::make_ERR_TOKEN(str, loc);
-    }
-}
-
-\.[0-9]+([eE][+-]?[0-9]+)? {
-    try {
-        float result = convertToFloatDec(yytext);
-        return YaccParser::make_FLOAT_CONST(result, loc);
-    } catch (const std::exception& e) {
-        _parser.reportError(loc, std::string("Error parsing decimal float: ") + e.what());
-        auto str = std::string(yytext);
-        return YaccParser::make_ERR_TOKEN(str, loc);
-    }
-}
-
-0[xX][0-9a-fA-F]+(\.[0-9a-fA-F]*)?([pP][+-]?[0-9]+) {
-    try {
-        float result = convertToFloatHex(yytext);
-        return YaccParser::make_FLOAT_CONST(result, loc);
-    } catch (const std::exception& e) {
-        _parser.reportError(loc, std::string("Error parsing hexadecimal float: ") + e.what());
         auto str = std::string(yytext);
         return YaccParser::make_ERR_TOKEN(str, loc);
     }

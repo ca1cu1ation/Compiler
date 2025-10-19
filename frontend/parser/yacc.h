@@ -528,29 +528,39 @@ namespace  FE  {
     TOKEN_STR_CONST = 260,         // STR_CONST
     TOKEN_ERR_TOKEN = 261,         // ERR_TOKEN
     TOKEN_SLASH_COMMENT = 262,     // SLASH_COMMENT
-    TOKEN_IDENT = 263,             // IDENT
-    TOKEN_IF = 264,                // IF
-    TOKEN_ELSE = 265,              // ELSE
-    TOKEN_FOR = 266,               // FOR
-    TOKEN_WHILE = 267,             // WHILE
-    TOKEN_CONTINUE = 268,          // CONTINUE
-    TOKEN_BREAK = 269,             // BREAK
-    TOKEN_SWITCH = 270,            // SWITCH
-    TOKEN_CASE = 271,              // CASE
-    TOKEN_GOTO = 272,              // GOTO
-    TOKEN_DO = 273,                // DO
-    TOKEN_RETURN = 274,            // RETURN
-    TOKEN_CONST = 275,             // CONST
-    TOKEN_SEMICOLON = 276,         // SEMICOLON
-    TOKEN_COMMA = 277,             // COMMA
-    TOKEN_LPAREN = 278,            // LPAREN
-    TOKEN_RPAREN = 279,            // RPAREN
-    TOKEN_LBRACKET = 280,          // LBRACKET
-    TOKEN_RBRACKET = 281,          // RBRACKET
-    TOKEN_LBRACE = 282,            // LBRACE
-    TOKEN_RBRACE = 283,            // RBRACE
-    TOKEN_END = 284,               // END
-    TOKEN_THEN = 285               // THEN
+    TOKEN_ASSIGN = 263,            // ASSIGN
+    TOKEN_EQ = 264,                // EQ
+    TOKEN_LE = 265,                // LE
+    TOKEN_GE = 266,                // GE
+    TOKEN_LT = 267,                // LT
+    TOKEN_GT = 268,                // GT
+    TOKEN_PLUS = 269,              // PLUS
+    TOKEN_MINUS = 270,             // MINUS
+    TOKEN_STAR = 271,              // STAR
+    TOKEN_DIV = 272,               // DIV
+    TOKEN_IDENT = 273,             // IDENT
+    TOKEN_IF = 274,                // IF
+    TOKEN_ELSE = 275,              // ELSE
+    TOKEN_FOR = 276,               // FOR
+    TOKEN_WHILE = 277,             // WHILE
+    TOKEN_CONTINUE = 278,          // CONTINUE
+    TOKEN_BREAK = 279,             // BREAK
+    TOKEN_SWITCH = 280,            // SWITCH
+    TOKEN_CASE = 281,              // CASE
+    TOKEN_GOTO = 282,              // GOTO
+    TOKEN_DO = 283,                // DO
+    TOKEN_RETURN = 284,            // RETURN
+    TOKEN_CONST = 285,             // CONST
+    TOKEN_SEMICOLON = 286,         // SEMICOLON
+    TOKEN_COMMA = 287,             // COMMA
+    TOKEN_LPAREN = 288,            // LPAREN
+    TOKEN_RPAREN = 289,            // RPAREN
+    TOKEN_LBRACKET = 290,          // LBRACKET
+    TOKEN_RBRACKET = 291,          // RBRACKET
+    TOKEN_LBRACE = 292,            // LBRACE
+    TOKEN_RBRACE = 293,            // RBRACE
+    TOKEN_END = 294,               // END
+    TOKEN_THEN = 295               // THEN
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -567,7 +577,7 @@ namespace  FE  {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 31, ///< Number of tokens.
+        YYNTOKENS = 41, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -577,49 +587,59 @@ namespace  FE  {
         S_STR_CONST = 5,                         // STR_CONST
         S_ERR_TOKEN = 6,                         // ERR_TOKEN
         S_SLASH_COMMENT = 7,                     // SLASH_COMMENT
-        S_IDENT = 8,                             // IDENT
-        S_IF = 9,                                // IF
-        S_ELSE = 10,                             // ELSE
-        S_FOR = 11,                              // FOR
-        S_WHILE = 12,                            // WHILE
-        S_CONTINUE = 13,                         // CONTINUE
-        S_BREAK = 14,                            // BREAK
-        S_SWITCH = 15,                           // SWITCH
-        S_CASE = 16,                             // CASE
-        S_GOTO = 17,                             // GOTO
-        S_DO = 18,                               // DO
-        S_RETURN = 19,                           // RETURN
-        S_CONST = 20,                            // CONST
-        S_SEMICOLON = 21,                        // SEMICOLON
-        S_COMMA = 22,                            // COMMA
-        S_LPAREN = 23,                           // LPAREN
-        S_RPAREN = 24,                           // RPAREN
-        S_LBRACKET = 25,                         // LBRACKET
-        S_RBRACKET = 26,                         // RBRACKET
-        S_LBRACE = 27,                           // LBRACE
-        S_RBRACE = 28,                           // RBRACE
-        S_END = 29,                              // END
-        S_THEN = 30,                             // THEN
-        S_YYACCEPT = 31,                         // $accept
-        S_PROGRAM = 32,                          // PROGRAM
-        S_STMT_LIST = 33,                        // STMT_LIST
-        S_STMT = 34,                             // STMT
-        S_CONTINUE_STMT = 35,                    // CONTINUE_STMT
-        S_EXPR_STMT = 36,                        // EXPR_STMT
-        S_VAR_DECLARATION = 37,                  // VAR_DECLARATION
-        S_VAR_DECL_STMT = 38,                    // VAR_DECL_STMT
-        S_FUNC_BODY = 39,                        // FUNC_BODY
-        S_FUNC_DECL_STMT = 40,                   // FUNC_DECL_STMT
-        S_FOR_STMT = 41,                         // FOR_STMT
-        S_IF_STMT = 42,                          // IF_STMT
-        S_PARAM_DECLARATOR_LIST = 43,            // PARAM_DECLARATOR_LIST
-        S_VAR_DECLARATOR = 44,                   // VAR_DECLARATOR
-        S_VAR_DECLARATOR_LIST = 45,              // VAR_DECLARATOR_LIST
-        S_ASSIGN_EXPR = 46,                      // ASSIGN_EXPR
-        S_EXPR = 47,                             // EXPR
-        S_NOCOMMA_EXPR = 48,                     // NOCOMMA_EXPR
-        S_LOGICAL_OR_EXPR = 49,                  // LOGICAL_OR_EXPR
-        S_TYPE = 50                              // TYPE
+        S_ASSIGN = 8,                            // ASSIGN
+        S_EQ = 9,                                // EQ
+        S_LE = 10,                               // LE
+        S_GE = 11,                               // GE
+        S_LT = 12,                               // LT
+        S_GT = 13,                               // GT
+        S_PLUS = 14,                             // PLUS
+        S_MINUS = 15,                            // MINUS
+        S_STAR = 16,                             // STAR
+        S_DIV = 17,                              // DIV
+        S_IDENT = 18,                            // IDENT
+        S_IF = 19,                               // IF
+        S_ELSE = 20,                             // ELSE
+        S_FOR = 21,                              // FOR
+        S_WHILE = 22,                            // WHILE
+        S_CONTINUE = 23,                         // CONTINUE
+        S_BREAK = 24,                            // BREAK
+        S_SWITCH = 25,                           // SWITCH
+        S_CASE = 26,                             // CASE
+        S_GOTO = 27,                             // GOTO
+        S_DO = 28,                               // DO
+        S_RETURN = 29,                           // RETURN
+        S_CONST = 30,                            // CONST
+        S_SEMICOLON = 31,                        // SEMICOLON
+        S_COMMA = 32,                            // COMMA
+        S_LPAREN = 33,                           // LPAREN
+        S_RPAREN = 34,                           // RPAREN
+        S_LBRACKET = 35,                         // LBRACKET
+        S_RBRACKET = 36,                         // RBRACKET
+        S_LBRACE = 37,                           // LBRACE
+        S_RBRACE = 38,                           // RBRACE
+        S_END = 39,                              // END
+        S_THEN = 40,                             // THEN
+        S_YYACCEPT = 41,                         // $accept
+        S_PROGRAM = 42,                          // PROGRAM
+        S_STMT_LIST = 43,                        // STMT_LIST
+        S_STMT = 44,                             // STMT
+        S_CONTINUE_STMT = 45,                    // CONTINUE_STMT
+        S_EXPR_STMT = 46,                        // EXPR_STMT
+        S_VAR_DECLARATION = 47,                  // VAR_DECLARATION
+        S_VAR_DECL_STMT = 48,                    // VAR_DECL_STMT
+        S_FUNC_BODY = 49,                        // FUNC_BODY
+        S_FUNC_DECL_STMT = 50,                   // FUNC_DECL_STMT
+        S_FOR_STMT = 51,                         // FOR_STMT
+        S_IF_STMT = 52,                          // IF_STMT
+        S_PARAM_DECLARATOR_LIST = 53,            // PARAM_DECLARATOR_LIST
+        S_VAR_DECLARATOR = 54,                   // VAR_DECLARATOR
+        S_VAR_DECLARATOR_LIST = 55,              // VAR_DECLARATOR_LIST
+        S_ASSIGN_EXPR = 56,                      // ASSIGN_EXPR
+        S_EXPR = 57,                             // EXPR
+        S_NOCOMMA_EXPR = 58,                     // NOCOMMA_EXPR
+        S_LOGICAL_OR_EXPR = 59,                  // LOGICAL_OR_EXPR
+        S_TYPE = 60                              // TYPE
       };
     };
 
@@ -1092,6 +1112,7 @@ switch (yykind)
 #if !defined _MSC_VER || defined __clang__
         YY_ASSERT (tok == token::TOKEN_YYEOF
                    || (token::TOKEN_YYerror <= tok && tok <= token::TOKEN_YYUNDEF)
+                   || (token::TOKEN_ASSIGN <= tok && tok <= token::TOKEN_DIV)
                    || (token::TOKEN_IF <= tok && tok <= token::TOKEN_THEN));
 #endif
       }
@@ -1128,7 +1149,8 @@ switch (yykind)
 #endif
       {
 #if !defined _MSC_VER || defined __clang__
-        YY_ASSERT ((token::TOKEN_STR_CONST <= tok && tok <= token::TOKEN_IDENT));
+        YY_ASSERT ((token::TOKEN_STR_CONST <= tok && tok <= token::TOKEN_SLASH_COMMENT)
+                   || tok == token::TOKEN_IDENT);
 #endif
       }
     };
@@ -1297,6 +1319,156 @@ switch (yykind)
       make_SLASH_COMMENT (const std::string& v, const location_type& l)
       {
         return symbol_type (token::TOKEN_SLASH_COMMENT, v, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_ASSIGN (location_type l)
+      {
+        return symbol_type (token::TOKEN_ASSIGN, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_ASSIGN (const location_type& l)
+      {
+        return symbol_type (token::TOKEN_ASSIGN, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_EQ (location_type l)
+      {
+        return symbol_type (token::TOKEN_EQ, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_EQ (const location_type& l)
+      {
+        return symbol_type (token::TOKEN_EQ, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_LE (location_type l)
+      {
+        return symbol_type (token::TOKEN_LE, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_LE (const location_type& l)
+      {
+        return symbol_type (token::TOKEN_LE, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_GE (location_type l)
+      {
+        return symbol_type (token::TOKEN_GE, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_GE (const location_type& l)
+      {
+        return symbol_type (token::TOKEN_GE, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_LT (location_type l)
+      {
+        return symbol_type (token::TOKEN_LT, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_LT (const location_type& l)
+      {
+        return symbol_type (token::TOKEN_LT, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_GT (location_type l)
+      {
+        return symbol_type (token::TOKEN_GT, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_GT (const location_type& l)
+      {
+        return symbol_type (token::TOKEN_GT, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_PLUS (location_type l)
+      {
+        return symbol_type (token::TOKEN_PLUS, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_PLUS (const location_type& l)
+      {
+        return symbol_type (token::TOKEN_PLUS, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_MINUS (location_type l)
+      {
+        return symbol_type (token::TOKEN_MINUS, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_MINUS (const location_type& l)
+      {
+        return symbol_type (token::TOKEN_MINUS, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_STAR (location_type l)
+      {
+        return symbol_type (token::TOKEN_STAR, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_STAR (const location_type& l)
+      {
+        return symbol_type (token::TOKEN_STAR, l);
+      }
+#endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DIV (location_type l)
+      {
+        return symbol_type (token::TOKEN_DIV, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_DIV (const location_type& l)
+      {
+        return symbol_type (token::TOKEN_DIV, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -2024,10 +2196,11 @@ switch (yykind)
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
       15,    16,    17,    18,    19,    20,    21,    22,    23,    24,
-      25,    26,    27,    28,    29,    30
+      25,    26,    27,    28,    29,    30,    31,    32,    33,    34,
+      35,    36,    37,    38,    39,    40
     };
     // Last valid token kind.
-    const int code_max = 285;
+    const int code_max = 295;
 
     if (t <= 0)
       return symbol_kind::S_YYEOF;
@@ -2266,7 +2439,7 @@ switch (yykind)
 
 #line 4 "frontend/parser/yacc.y"
 } //  FE 
-#line 2270 "frontend/parser/yacc.h"
+#line 2443 "frontend/parser/yacc.h"
 
 
 

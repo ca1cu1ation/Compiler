@@ -32,6 +32,36 @@ namespace FE
                     result.fval = token.value.as<float>();
                     result.type = Token::TokenType::T_FLOAT;
                     break;
+                case kind::S_PLUS:
+                    result.type = Token::TokenType::T_PLUS;
+                    break;
+                case kind::S_MINUS:
+                    result.type = Token::TokenType::T_MINUS;
+                    break;
+                case kind::S_STAR:
+                    result.type = Token::TokenType::T_STAR;
+                    break;
+                case kind::S_DIV:
+                    result.type = Token::TokenType::T_DIV;
+                    break;
+                case kind::S_ASSIGN:
+                    result.type = Token::TokenType::T_ASSIGN;
+                    break;
+                case kind::S_EQ:
+                    result.type = Token::TokenType::T_EQ;
+                    break;
+                case kind::S_LE:
+                    result.type = Token::TokenType::T_LE;
+                    break;
+                case kind::S_LT:
+                    result.type = Token::TokenType::T_LT;
+                    break;
+                case kind::S_GE:
+                    result.type = Token::TokenType::T_GE;
+                    break;
+                case kind::S_GT:
+                    result.type = Token::TokenType::T_GT;
+                    break;
                 case kind::S_IDENT:
                 case kind::S_SLASH_COMMENT:
                 case kind::S_ERR_TOKEN:
