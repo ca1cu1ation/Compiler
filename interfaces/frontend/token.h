@@ -22,13 +22,22 @@ namespace FE
             T_PLUS,
             T_MINUS,
             T_STAR,
-            T_DIV,
+            T_SLASH,
+            T_MOD,
             T_ASSIGN,
+            T_NE,
             T_EQ,
             T_LE,
             T_LT,
             T_GE,
             T_GT,
+            T_AND,
+            T_OR,
+            T_NOT,
+            T_IDENT,
+            T_SLASH_COMMENT,    // 单行注释
+            T_MULTI_COMMENT,    // 多行注释
+            T_ERR,              // 错误 token
             T_NONE
         } type;
         union

@@ -162,6 +162,12 @@ int main(int argc, char** argv)
                     *outStream << setw(STR_PW) << token.dval;
                 else if (token.type == FE::Token::TokenType::T_STRING)
                     *outStream << setw(STR_PW) << token.sval;
+                else if( token.type == FE::Token::TokenType::T_IDENT)
+                    *outStream << setw(STR_PW) << token.sval;
+                else if (token.type == FE::Token::TokenType::T_SLASH_COMMENT)
+                    *outStream << setw(STR_PW) << token.sval;
+                else if (token.type == FE::Token::TokenType::T_MULTI_COMMENT)
+                    *outStream << setw(STR_PW) << token.sval;
                 else
                     *outStream << setw(STR_PW) << " ";
 

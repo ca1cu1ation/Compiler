@@ -41,11 +41,17 @@ namespace FE
                 case kind::S_STAR:
                     result.type = Token::TokenType::T_STAR;
                     break;
-                case kind::S_DIV:
-                    result.type = Token::TokenType::T_DIV;
+                case kind::S_SLASH:
+                    result.type = Token::TokenType::T_SLASH;
+                    break;
+                case kind::S_MOD:
+                    result.type = Token::TokenType::T_MOD;
                     break;
                 case kind::S_ASSIGN:
                     result.type = Token::TokenType::T_ASSIGN;
+                    break;
+                case kind::S_NE:
+                    result.type = Token::TokenType::T_NE;
                     break;
                 case kind::S_EQ:
                     result.type = Token::TokenType::T_EQ;
@@ -62,9 +68,35 @@ namespace FE
                 case kind::S_GT:
                     result.type = Token::TokenType::T_GT;
                     break;
+                case kind::S_AND:
+                    result.type = Token::TokenType::T_AND;
+                    break;
+                case kind::S_OR:
+                    result.type = Token::TokenType::T_OR;
+                    break;
+                case kind::S_NOT:
+                    result.type = Token::TokenType::T_NOT;
+                    break;
+                case kind::S_FLOAT:
+                    break;
+                case kind::S_INT:
+                    break;
                 case kind::S_IDENT:
+                    result.sval = token.value.as<std::string>();
+                    result.type = Token::TokenType::T_IDENT;
+                    break;
                 case kind::S_SLASH_COMMENT:
+                    result.sval = token.value.as<std::string>();
+                    result.type = Token::TokenType::T_SLASH_COMMENT;
+                    break;
+                case kind::S_MULTI_COMMENT:
+                    result.sval = token.value.as<std::string>();
+                    result.type = Token::TokenType::T_MULTI_COMMENT;
+                    break;
                 case kind::S_ERR_TOKEN:
+                    result.sval = token.value.as<std::string>();
+                    result.type = Token::TokenType::T_ERR;
+                    break;
                 case kind::S_STR_CONST:
                     result.sval = token.value.as<std::string>();
                     result.type = Token::TokenType::T_STRING;

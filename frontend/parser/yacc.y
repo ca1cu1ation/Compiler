@@ -63,8 +63,9 @@
 // 例如，%token <int> INT_CONST 定义了一个名为 INT_CONST
 %token <int> INT_CONST
 %token <float> FLOAT_CONST
-%token <std::string> STR_CONST ERR_TOKEN SLASH_COMMENT
-%token ASSIGN EQ LE GE LT GT PLUS MINUS STAR DIV
+%token <std::string> STR_CONST ERR_TOKEN SLASH_COMMENT MULTI_COMMENT
+%token ASSIGN NE EQ LE GE LT GT PLUS MINUS STAR SLASH MOD AND OR NOT
+%token INT FLOAT STRING
 %token <std::string> IDENT 
 
 %token IF ELSE FOR WHILE CONTINUE BREAK SWITCH CASE GOTO DO RETURN CONST
@@ -175,6 +176,11 @@ STMT:
         $$ = nullptr;
     }
     | SLASH_COMMENT {
+        // 单行注释，不生成AST节点，直接忽略
+        $$ = nullptr;
+    }
+    | MULTI_COMMENT {
+        // 多行注释，不生成AST节点，直接忽略
         $$ = nullptr;
     }
     //TODO(Lab2)：考虑更多语句类型
