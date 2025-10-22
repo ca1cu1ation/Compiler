@@ -63,6 +63,7 @@
 // 例如，%token <int> INT_CONST 定义了一个名为 INT_CONST
 %token <int> INT_CONST
 %token <float> FLOAT_CONST
+%token <long long> LL_CONST
 %token <std::string> STR_CONST ERR_TOKEN SLASH_COMMENT MULTI_COMMENT
 %token ASSIGN NE EQ LE GE LT GT PLUS MINUS STAR SLASH MOD AND OR NOT
 %token INT FLOAT STRING

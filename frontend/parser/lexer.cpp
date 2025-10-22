@@ -668,7 +668,7 @@ static const flex_int16_t yy_rule_linenum[59] =
        93,   94,   95,   96,   97,   98,   99,  100,  101,  102,
       103,  104,  105,  106,  107,  109,  110,  123,  124,  131,
       137,  154,  159,  165,  166,  177,  188,  199,  210,  211,
-      223,  236,  249,  250,  251,  252,  253,  254
+      226,  242,  258,  259,  260,  261,  262,  263
     } ;
 
 /* The intent behind this definition is that it'll catch
@@ -1347,7 +1347,10 @@ YY_RULE_SETUP
     try {
         bool isLL = false;
         long long result = convertToInt(yytext, '\0', isLL);
-        return YaccParser::make_INT_CONST(static_cast<int>(result), loc);
+        if (isLL) {
+            return YaccParser::make_LL_CONST(result, loc); // 长整型常量
+        }
+        return YaccParser::make_INT_CONST(static_cast<int>(result), loc); // 普通整型常量
     } catch (const std::exception& e) {
         _parser.reportError(loc, std::string("Error parsing hexadecimal int: ") + e.what());
         auto str = std::string(yytext);
@@ -1357,13 +1360,16 @@ YY_RULE_SETUP
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 223 "frontend/parser/lexer.l"
+#line 226 "frontend/parser/lexer.l"
 {
     try {
         bool isLL = false;
         long long result = convertToInt(yytext, '\0', isLL);
         // octal or zero; if invalid octal digits present convertToInt will throw
-        return YaccParser::make_INT_CONST(static_cast<int>(result), loc);
+         if (isLL) {
+            return YaccParser::make_LL_CONST(result, loc); // 长整型常量
+        }
+        return YaccParser::make_INT_CONST(static_cast<int>(result), loc); // 普通整型常量
     } catch (const std::exception& e) {
         _parser.reportError(loc, std::string("Error parsing octal/zero int: ") + e.what());
         auto str = std::string(yytext);
@@ -1373,13 +1379,16 @@ YY_RULE_SETUP
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 236 "frontend/parser/lexer.l"
+#line 242 "frontend/parser/lexer.l"
 {
     try {
         bool isLL = false;
         long long result = convertToInt(yytext, '\0', isLL);
         // if (isLL) return YaccParser::make_LL_CONST(result, loc);
-        return YaccParser::make_INT_CONST(static_cast<int>(result), loc);
+         if (isLL) {
+            return YaccParser::make_LL_CONST(result, loc); // 长整型常量
+        }
+        return YaccParser::make_INT_CONST(static_cast<int>(result), loc); // 普通整型常量
     } catch (const std::exception& e) {
         _parser.reportError(loc, std::string("Error parsing decimal int: ") + e.what());
         auto str = std::string(yytext);
@@ -1389,44 +1398,44 @@ YY_RULE_SETUP
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 249 "frontend/parser/lexer.l"
+#line 258 "frontend/parser/lexer.l"
 { RETT(LPAREN, loc) }
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
-#line 250 "frontend/parser/lexer.l"
+#line 259 "frontend/parser/lexer.l"
 { RETT(RPAREN, loc) }
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 251 "frontend/parser/lexer.l"
+#line 260 "frontend/parser/lexer.l"
 { RETT(LBRACKET, loc) }
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
-#line 252 "frontend/parser/lexer.l"
+#line 261 "frontend/parser/lexer.l"
 { RETT(RBRACKET, loc) }
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
-#line 253 "frontend/parser/lexer.l"
+#line 262 "frontend/parser/lexer.l"
 { RETT(LBRACE, loc) }
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
-#line 254 "frontend/parser/lexer.l"
+#line 263 "frontend/parser/lexer.l"
 { RETT(RBRACE, loc) }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
-#line 257 "frontend/parser/lexer.l"
+#line 266 "frontend/parser/lexer.l"
 { RETT(END, loc); }
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
-#line 259 "frontend/parser/lexer.l"
+#line 268 "frontend/parser/lexer.l"
 ECHO;
 	YY_BREAK
-#line 1430 "frontend/parser/lexer.cpp"
+#line 1439 "frontend/parser/lexer.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2542,7 +2551,7 @@ void yyfree (void * ptr )
 
 /* %ok-for-header */
 
-#line 259 "frontend/parser/lexer.l"
+#line 268 "frontend/parser/lexer.l"
 
 
 int handleTab()
