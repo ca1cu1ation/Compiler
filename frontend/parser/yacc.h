@@ -427,10 +427,29 @@ namespace  FE  {
       // EXPR
       // NOCOMMA_EXPR
       // LOGICAL_OR_EXPR
+      // LOGICAL_AND_EXPR
+      // EQUALITY_EXPR
+      // RELATIONAL_EXPR
+      // ADDSUB_EXPR
+      // MULDIV_EXPR
+      // UNARY_EXPR
+      // BASIC_EXPR
+      // FUNC_CALL_EXPR
+      // LEFT_VAL_EXPR
+      // LITERAL_EXPR
       char dummy1[sizeof (FE::AST::ExprNode*)];
 
+      // INITIALIZER
+      char dummy2[sizeof (FE::AST::InitDecl*)];
+
+      // UNARY_OP
+      char dummy3[sizeof (FE::AST::Operator)];
+
+      // PARAM_DECLARATOR
+      char dummy4[sizeof (FE::AST::ParamDeclarator*)];
+
       // PROGRAM
-      char dummy2[sizeof (FE::AST::Root*)];
+      char dummy5[sizeof (FE::AST::Root*)];
 
       // STMT
       // CONTINUE_STMT
@@ -440,41 +459,51 @@ namespace  FE  {
       // FUNC_DECL_STMT
       // FOR_STMT
       // IF_STMT
-      char dummy3[sizeof (FE::AST::StmtNode*)];
+      // RETURN_STMT
+      // WHILE_STMT
+      // BLOCK_STMT
+      char dummy6[sizeof (FE::AST::StmtNode*)];
 
       // TYPE
-      char dummy4[sizeof (FE::AST::Type*)];
+      char dummy7[sizeof (FE::AST::Type*)];
 
       // VAR_DECLARATION
-      char dummy5[sizeof (FE::AST::VarDeclaration*)];
+      char dummy8[sizeof (FE::AST::VarDeclaration*)];
 
       // VAR_DECLARATOR
-      char dummy6[sizeof (FE::AST::VarDeclarator*)];
+      char dummy9[sizeof (FE::AST::VarDeclarator*)];
 
       // FLOAT_CONST
-      char dummy7[sizeof (float)];
+      char dummy10[sizeof (float)];
 
       // INT_CONST
-      char dummy8[sizeof (int)];
+      char dummy11[sizeof (int)];
 
       // LL_CONST
-      char dummy9[sizeof (long long)];
+      char dummy12[sizeof (long long)];
 
       // STR_CONST
       // ERR_TOKEN
       // SLASH_COMMENT
       // MULTI_COMMENT
       // IDENT
-      char dummy10[sizeof (std::string)];
+      char dummy13[sizeof (std::string)];
+
+      // EXPR_LIST
+      // ARRAY_DIMENSION_EXPR_LIST
+      char dummy14[sizeof (std::vector<FE::AST::ExprNode*>*)];
+
+      // INITIALIZER_LIST
+      char dummy15[sizeof (std::vector<FE::AST::InitDecl*>*)];
 
       // PARAM_DECLARATOR_LIST
-      char dummy11[sizeof (std::vector<FE::AST::ParamDeclarator*>*)];
+      char dummy16[sizeof (std::vector<FE::AST::ParamDeclarator*>*)];
 
       // STMT_LIST
-      char dummy12[sizeof (std::vector<FE::AST::StmtNode*>*)];
+      char dummy17[sizeof (std::vector<FE::AST::StmtNode*>*)];
 
       // VAR_DECLARATOR_LIST
-      char dummy13[sizeof (std::vector<FE::AST::VarDeclarator*>*)];
+      char dummy18[sizeof (std::vector<FE::AST::VarDeclarator*>*)];
     };
 
     /// The size of the largest semantic type.
@@ -656,14 +685,33 @@ namespace  FE  {
         S_FUNC_DECL_STMT = 60,                   // FUNC_DECL_STMT
         S_FOR_STMT = 61,                         // FOR_STMT
         S_IF_STMT = 62,                          // IF_STMT
-        S_PARAM_DECLARATOR_LIST = 63,            // PARAM_DECLARATOR_LIST
-        S_VAR_DECLARATOR = 64,                   // VAR_DECLARATOR
-        S_VAR_DECLARATOR_LIST = 65,              // VAR_DECLARATOR_LIST
-        S_ASSIGN_EXPR = 66,                      // ASSIGN_EXPR
-        S_EXPR = 67,                             // EXPR
-        S_NOCOMMA_EXPR = 68,                     // NOCOMMA_EXPR
-        S_LOGICAL_OR_EXPR = 69,                  // LOGICAL_OR_EXPR
-        S_TYPE = 70                              // TYPE
+        S_RETURN_STMT = 63,                      // RETURN_STMT
+        S_WHILE_STMT = 64,                       // WHILE_STMT
+        S_BLOCK_STMT = 65,                       // BLOCK_STMT
+        S_PARAM_DECLARATOR = 66,                 // PARAM_DECLARATOR
+        S_PARAM_DECLARATOR_LIST = 67,            // PARAM_DECLARATOR_LIST
+        S_VAR_DECLARATOR = 68,                   // VAR_DECLARATOR
+        S_VAR_DECLARATOR_LIST = 69,              // VAR_DECLARATOR_LIST
+        S_INITIALIZER = 70,                      // INITIALIZER
+        S_INITIALIZER_LIST = 71,                 // INITIALIZER_LIST
+        S_ASSIGN_EXPR = 72,                      // ASSIGN_EXPR
+        S_EXPR_LIST = 73,                        // EXPR_LIST
+        S_EXPR = 74,                             // EXPR
+        S_NOCOMMA_EXPR = 75,                     // NOCOMMA_EXPR
+        S_LOGICAL_OR_EXPR = 76,                  // LOGICAL_OR_EXPR
+        S_LOGICAL_AND_EXPR = 77,                 // LOGICAL_AND_EXPR
+        S_EQUALITY_EXPR = 78,                    // EQUALITY_EXPR
+        S_RELATIONAL_EXPR = 79,                  // RELATIONAL_EXPR
+        S_ADDSUB_EXPR = 80,                      // ADDSUB_EXPR
+        S_MULDIV_EXPR = 81,                      // MULDIV_EXPR
+        S_UNARY_EXPR = 82,                       // UNARY_EXPR
+        S_BASIC_EXPR = 83,                       // BASIC_EXPR
+        S_FUNC_CALL_EXPR = 84,                   // FUNC_CALL_EXPR
+        S_ARRAY_DIMENSION_EXPR_LIST = 85,        // ARRAY_DIMENSION_EXPR_LIST
+        S_LEFT_VAL_EXPR = 86,                    // LEFT_VAL_EXPR
+        S_LITERAL_EXPR = 87,                     // LITERAL_EXPR
+        S_TYPE = 88,                             // TYPE
+        S_UNARY_OP = 89                          // UNARY_OP
       };
     };
 
@@ -704,7 +752,29 @@ namespace  FE  {
       case symbol_kind::S_EXPR: // EXPR
       case symbol_kind::S_NOCOMMA_EXPR: // NOCOMMA_EXPR
       case symbol_kind::S_LOGICAL_OR_EXPR: // LOGICAL_OR_EXPR
+      case symbol_kind::S_LOGICAL_AND_EXPR: // LOGICAL_AND_EXPR
+      case symbol_kind::S_EQUALITY_EXPR: // EQUALITY_EXPR
+      case symbol_kind::S_RELATIONAL_EXPR: // RELATIONAL_EXPR
+      case symbol_kind::S_ADDSUB_EXPR: // ADDSUB_EXPR
+      case symbol_kind::S_MULDIV_EXPR: // MULDIV_EXPR
+      case symbol_kind::S_UNARY_EXPR: // UNARY_EXPR
+      case symbol_kind::S_BASIC_EXPR: // BASIC_EXPR
+      case symbol_kind::S_FUNC_CALL_EXPR: // FUNC_CALL_EXPR
+      case symbol_kind::S_LEFT_VAL_EXPR: // LEFT_VAL_EXPR
+      case symbol_kind::S_LITERAL_EXPR: // LITERAL_EXPR
         value.move< FE::AST::ExprNode* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_INITIALIZER: // INITIALIZER
+        value.move< FE::AST::InitDecl* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_UNARY_OP: // UNARY_OP
+        value.move< FE::AST::Operator > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_PARAM_DECLARATOR: // PARAM_DECLARATOR
+        value.move< FE::AST::ParamDeclarator* > (std::move (that.value));
         break;
 
       case symbol_kind::S_PROGRAM: // PROGRAM
@@ -719,6 +789,9 @@ namespace  FE  {
       case symbol_kind::S_FUNC_DECL_STMT: // FUNC_DECL_STMT
       case symbol_kind::S_FOR_STMT: // FOR_STMT
       case symbol_kind::S_IF_STMT: // IF_STMT
+      case symbol_kind::S_RETURN_STMT: // RETURN_STMT
+      case symbol_kind::S_WHILE_STMT: // WHILE_STMT
+      case symbol_kind::S_BLOCK_STMT: // BLOCK_STMT
         value.move< FE::AST::StmtNode* > (std::move (that.value));
         break;
 
@@ -752,6 +825,15 @@ namespace  FE  {
       case symbol_kind::S_MULTI_COMMENT: // MULTI_COMMENT
       case symbol_kind::S_IDENT: // IDENT
         value.move< std::string > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_EXPR_LIST: // EXPR_LIST
+      case symbol_kind::S_ARRAY_DIMENSION_EXPR_LIST: // ARRAY_DIMENSION_EXPR_LIST
+        value.move< std::vector<FE::AST::ExprNode*>* > (std::move (that.value));
+        break;
+
+      case symbol_kind::S_INITIALIZER_LIST: // INITIALIZER_LIST
+        value.move< std::vector<FE::AST::InitDecl*>* > (std::move (that.value));
         break;
 
       case symbol_kind::S_PARAM_DECLARATOR_LIST: // PARAM_DECLARATOR_LIST
@@ -797,6 +879,48 @@ namespace  FE  {
       {}
 #else
       basic_symbol (typename Base::kind_type t, const FE::AST::ExprNode*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, FE::AST::InitDecl*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const FE::AST::InitDecl*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, FE::AST::Operator&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const FE::AST::Operator& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, FE::AST::ParamDeclarator*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const FE::AST::ParamDeclarator*& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -930,6 +1054,34 @@ namespace  FE  {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<FE::AST::ExprNode*>*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<FE::AST::ExprNode*>*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
+      basic_symbol (typename Base::kind_type t, std::vector<FE::AST::InitDecl*>*&& v, location_type&& l)
+        : Base (t)
+        , value (std::move (v))
+        , location (std::move (l))
+      {}
+#else
+      basic_symbol (typename Base::kind_type t, const std::vector<FE::AST::InitDecl*>*& v, const location_type& l)
+        : Base (t)
+        , value (v)
+        , location (l)
+      {}
+#endif
+
+#if 201103L <= YY_CPLUSPLUS
       basic_symbol (typename Base::kind_type t, std::vector<FE::AST::ParamDeclarator*>*&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
@@ -999,7 +1151,29 @@ switch (yykind)
       case symbol_kind::S_EXPR: // EXPR
       case symbol_kind::S_NOCOMMA_EXPR: // NOCOMMA_EXPR
       case symbol_kind::S_LOGICAL_OR_EXPR: // LOGICAL_OR_EXPR
+      case symbol_kind::S_LOGICAL_AND_EXPR: // LOGICAL_AND_EXPR
+      case symbol_kind::S_EQUALITY_EXPR: // EQUALITY_EXPR
+      case symbol_kind::S_RELATIONAL_EXPR: // RELATIONAL_EXPR
+      case symbol_kind::S_ADDSUB_EXPR: // ADDSUB_EXPR
+      case symbol_kind::S_MULDIV_EXPR: // MULDIV_EXPR
+      case symbol_kind::S_UNARY_EXPR: // UNARY_EXPR
+      case symbol_kind::S_BASIC_EXPR: // BASIC_EXPR
+      case symbol_kind::S_FUNC_CALL_EXPR: // FUNC_CALL_EXPR
+      case symbol_kind::S_LEFT_VAL_EXPR: // LEFT_VAL_EXPR
+      case symbol_kind::S_LITERAL_EXPR: // LITERAL_EXPR
         value.template destroy< FE::AST::ExprNode* > ();
+        break;
+
+      case symbol_kind::S_INITIALIZER: // INITIALIZER
+        value.template destroy< FE::AST::InitDecl* > ();
+        break;
+
+      case symbol_kind::S_UNARY_OP: // UNARY_OP
+        value.template destroy< FE::AST::Operator > ();
+        break;
+
+      case symbol_kind::S_PARAM_DECLARATOR: // PARAM_DECLARATOR
+        value.template destroy< FE::AST::ParamDeclarator* > ();
         break;
 
       case symbol_kind::S_PROGRAM: // PROGRAM
@@ -1014,6 +1188,9 @@ switch (yykind)
       case symbol_kind::S_FUNC_DECL_STMT: // FUNC_DECL_STMT
       case symbol_kind::S_FOR_STMT: // FOR_STMT
       case symbol_kind::S_IF_STMT: // IF_STMT
+      case symbol_kind::S_RETURN_STMT: // RETURN_STMT
+      case symbol_kind::S_WHILE_STMT: // WHILE_STMT
+      case symbol_kind::S_BLOCK_STMT: // BLOCK_STMT
         value.template destroy< FE::AST::StmtNode* > ();
         break;
 
@@ -1047,6 +1224,15 @@ switch (yykind)
       case symbol_kind::S_MULTI_COMMENT: // MULTI_COMMENT
       case symbol_kind::S_IDENT: // IDENT
         value.template destroy< std::string > ();
+        break;
+
+      case symbol_kind::S_EXPR_LIST: // EXPR_LIST
+      case symbol_kind::S_ARRAY_DIMENSION_EXPR_LIST: // ARRAY_DIMENSION_EXPR_LIST
+        value.template destroy< std::vector<FE::AST::ExprNode*>* > ();
+        break;
+
+      case symbol_kind::S_INITIALIZER_LIST: // INITIALIZER_LIST
+        value.template destroy< std::vector<FE::AST::InitDecl*>* > ();
         break;
 
       case symbol_kind::S_PARAM_DECLARATOR_LIST: // PARAM_DECLARATOR_LIST
@@ -2056,7 +2242,7 @@ switch (yykind)
 
 
     /// Stored state numbers (used for stacks).
-    typedef signed char state_type;
+    typedef unsigned char state_type;
 
     /// The arguments of the error message.
     int yy_syntax_error_arguments_ (const context& yyctx,
@@ -2096,7 +2282,7 @@ switch (yykind)
     // Tables.
     // YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
     // STATE-NUM.
-    static const signed char yypact_[];
+    static const short yypact_[];
 
     // YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
     // Performed when YYTABLE does not specify something else to do.  Zero
@@ -2107,14 +2293,14 @@ switch (yykind)
     static const signed char yypgoto_[];
 
     // YYDEFGOTO[NTERM-NUM].
-    static const signed char yydefgoto_[];
+    static const unsigned char yydefgoto_[];
 
     // YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
     // positive, shift that token.  If negative, reduce the rule whose
     // number is the opposite.  If YYTABLE_NINF, syntax error.
-    static const signed char yytable_[];
+    static const unsigned char yytable_[];
 
-    static const signed char yycheck_[];
+    static const short yycheck_[];
 
     // YYSTOS[STATE-NUM] -- The symbol kind of the accessing symbol of
     // state STATE-NUM.
@@ -2356,9 +2542,9 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 68,     ///< Last index in yytable_.
-      yynnts_ = 20,  ///< Number of nonterminal symbols.
-      yyfinal_ = 22 ///< Termination state number.
+      yylast_ = 458,     ///< Last index in yytable_.
+      yynnts_ = 39,  ///< Number of nonterminal symbols.
+      yyfinal_ = 64 ///< Termination state number.
     };
 
 
@@ -2434,7 +2620,29 @@ switch (yykind)
       case symbol_kind::S_EXPR: // EXPR
       case symbol_kind::S_NOCOMMA_EXPR: // NOCOMMA_EXPR
       case symbol_kind::S_LOGICAL_OR_EXPR: // LOGICAL_OR_EXPR
+      case symbol_kind::S_LOGICAL_AND_EXPR: // LOGICAL_AND_EXPR
+      case symbol_kind::S_EQUALITY_EXPR: // EQUALITY_EXPR
+      case symbol_kind::S_RELATIONAL_EXPR: // RELATIONAL_EXPR
+      case symbol_kind::S_ADDSUB_EXPR: // ADDSUB_EXPR
+      case symbol_kind::S_MULDIV_EXPR: // MULDIV_EXPR
+      case symbol_kind::S_UNARY_EXPR: // UNARY_EXPR
+      case symbol_kind::S_BASIC_EXPR: // BASIC_EXPR
+      case symbol_kind::S_FUNC_CALL_EXPR: // FUNC_CALL_EXPR
+      case symbol_kind::S_LEFT_VAL_EXPR: // LEFT_VAL_EXPR
+      case symbol_kind::S_LITERAL_EXPR: // LITERAL_EXPR
         value.copy< FE::AST::ExprNode* > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_INITIALIZER: // INITIALIZER
+        value.copy< FE::AST::InitDecl* > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_UNARY_OP: // UNARY_OP
+        value.copy< FE::AST::Operator > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_PARAM_DECLARATOR: // PARAM_DECLARATOR
+        value.copy< FE::AST::ParamDeclarator* > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_PROGRAM: // PROGRAM
@@ -2449,6 +2657,9 @@ switch (yykind)
       case symbol_kind::S_FUNC_DECL_STMT: // FUNC_DECL_STMT
       case symbol_kind::S_FOR_STMT: // FOR_STMT
       case symbol_kind::S_IF_STMT: // IF_STMT
+      case symbol_kind::S_RETURN_STMT: // RETURN_STMT
+      case symbol_kind::S_WHILE_STMT: // WHILE_STMT
+      case symbol_kind::S_BLOCK_STMT: // BLOCK_STMT
         value.copy< FE::AST::StmtNode* > (YY_MOVE (that.value));
         break;
 
@@ -2482,6 +2693,15 @@ switch (yykind)
       case symbol_kind::S_MULTI_COMMENT: // MULTI_COMMENT
       case symbol_kind::S_IDENT: // IDENT
         value.copy< std::string > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_EXPR_LIST: // EXPR_LIST
+      case symbol_kind::S_ARRAY_DIMENSION_EXPR_LIST: // ARRAY_DIMENSION_EXPR_LIST
+        value.copy< std::vector<FE::AST::ExprNode*>* > (YY_MOVE (that.value));
+        break;
+
+      case symbol_kind::S_INITIALIZER_LIST: // INITIALIZER_LIST
+        value.copy< std::vector<FE::AST::InitDecl*>* > (YY_MOVE (that.value));
         break;
 
       case symbol_kind::S_PARAM_DECLARATOR_LIST: // PARAM_DECLARATOR_LIST
@@ -2531,7 +2751,29 @@ switch (yykind)
       case symbol_kind::S_EXPR: // EXPR
       case symbol_kind::S_NOCOMMA_EXPR: // NOCOMMA_EXPR
       case symbol_kind::S_LOGICAL_OR_EXPR: // LOGICAL_OR_EXPR
+      case symbol_kind::S_LOGICAL_AND_EXPR: // LOGICAL_AND_EXPR
+      case symbol_kind::S_EQUALITY_EXPR: // EQUALITY_EXPR
+      case symbol_kind::S_RELATIONAL_EXPR: // RELATIONAL_EXPR
+      case symbol_kind::S_ADDSUB_EXPR: // ADDSUB_EXPR
+      case symbol_kind::S_MULDIV_EXPR: // MULDIV_EXPR
+      case symbol_kind::S_UNARY_EXPR: // UNARY_EXPR
+      case symbol_kind::S_BASIC_EXPR: // BASIC_EXPR
+      case symbol_kind::S_FUNC_CALL_EXPR: // FUNC_CALL_EXPR
+      case symbol_kind::S_LEFT_VAL_EXPR: // LEFT_VAL_EXPR
+      case symbol_kind::S_LITERAL_EXPR: // LITERAL_EXPR
         value.move< FE::AST::ExprNode* > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_INITIALIZER: // INITIALIZER
+        value.move< FE::AST::InitDecl* > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_UNARY_OP: // UNARY_OP
+        value.move< FE::AST::Operator > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_PARAM_DECLARATOR: // PARAM_DECLARATOR
+        value.move< FE::AST::ParamDeclarator* > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_PROGRAM: // PROGRAM
@@ -2546,6 +2788,9 @@ switch (yykind)
       case symbol_kind::S_FUNC_DECL_STMT: // FUNC_DECL_STMT
       case symbol_kind::S_FOR_STMT: // FOR_STMT
       case symbol_kind::S_IF_STMT: // IF_STMT
+      case symbol_kind::S_RETURN_STMT: // RETURN_STMT
+      case symbol_kind::S_WHILE_STMT: // WHILE_STMT
+      case symbol_kind::S_BLOCK_STMT: // BLOCK_STMT
         value.move< FE::AST::StmtNode* > (YY_MOVE (s.value));
         break;
 
@@ -2579,6 +2824,15 @@ switch (yykind)
       case symbol_kind::S_MULTI_COMMENT: // MULTI_COMMENT
       case symbol_kind::S_IDENT: // IDENT
         value.move< std::string > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_EXPR_LIST: // EXPR_LIST
+      case symbol_kind::S_ARRAY_DIMENSION_EXPR_LIST: // ARRAY_DIMENSION_EXPR_LIST
+        value.move< std::vector<FE::AST::ExprNode*>* > (YY_MOVE (s.value));
+        break;
+
+      case symbol_kind::S_INITIALIZER_LIST: // INITIALIZER_LIST
+        value.move< std::vector<FE::AST::InitDecl*>* > (YY_MOVE (s.value));
         break;
 
       case symbol_kind::S_PARAM_DECLARATOR_LIST: // PARAM_DECLARATOR_LIST
@@ -2660,7 +2914,7 @@ switch (yykind)
 
 #line 4 "frontend/parser/yacc.y"
 } //  FE 
-#line 2664 "frontend/parser/yacc.h"
+#line 2918 "frontend/parser/yacc.h"
 
 
 

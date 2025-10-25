@@ -54,6 +54,7 @@ namespace FE::AST
         LiteralExpr(int v, int line_num = -1, int col_num = -1) : ExprNode(line_num, col_num), literal(v) {}
         LiteralExpr(long long v, int line_num = -1, int col_num = -1) : ExprNode(line_num, col_num), literal(v) {}
         LiteralExpr(float v, int line_num = -1, int col_num = -1) : ExprNode(line_num, col_num), literal(v) {}
+        LiteralExpr(const std::string& v, int line_num = -1, int col_num = -1) : ExprNode(line_num, col_num), literal(v) {}
         virtual ~LiteralExpr() override = default;
 
         virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
@@ -126,6 +127,22 @@ namespace FE::AST
         virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
 
         virtual bool isCommaExpr() const override { return true; }
+    };
+
+    // 赋值表达式，如 a = b
+    class AssignExpr : public ExprNode
+    {
+      public:
+        ExprNode* lhs; // 左值表达式
+        ExprNode* rhs; // 右值表达式
+
+      public:
+        AssignExpr(ExprNode* lhs, ExprNode* rhs, int line_num = -1, int col_num = -1)
+            : ExprNode(line_num, col_num), lhs(lhs), rhs(rhs)
+        {}
+        virtual ~AssignExpr() override = default;
+
+        virtual void accept(Visitor& visitor) override { visitor.visit(*this); }
     };
 }  // namespace FE::AST
 

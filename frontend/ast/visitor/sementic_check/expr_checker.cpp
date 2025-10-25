@@ -51,4 +51,12 @@ namespace FE::AST
         (void)node;
         TODO("Lab3-1: Implement CommaExpr semantic checking");
     }
+
+    bool ASTChecker::visit(AssignExpr& node)
+    {
+        // TODO(Lab3-1): 实现赋值表达式的语义检查
+        // 检查左值表达式是否合法，访问右值表达式，检查类型匹配
+        (void)node;
+        TODO("Lab3-1: Implement AssignExpr semantic checking");
+    }
 }  // namespace FE::AST

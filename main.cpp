@@ -135,6 +135,7 @@ int main(int argc, char** argv)
      *
      * 期望输出示例:
      * 在 `testcase/lexer/` 目录下提供了一些测试用例以及它们的预期输出，可以自行查看。
+     * ./bin/compiler -lexer -o test_output/simple.lexer testcase/lexer/simple.sy
      */
     {
         FE::Parser parser(inStream, outStream);
@@ -206,6 +207,7 @@ int main(int argc, char** argv)
          *
          * 期望输出示例:
          * 在 `testcase/parser/` 目录下提供了一些测试用例以及它们的预期输出，可以自行查看。
+         * ./bin/compiler -parser -o test_output/simple.parser testcase/parser/simple.sy
          */
         ast = parser.parseAST();
         if (!ast)

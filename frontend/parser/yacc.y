@@ -155,6 +155,7 @@ STMT_LIST:
     ;
 
 STMT:
+    //TODO(Lab2)：考虑更多语句类型
     EXPR_STMT {
         $$ = $1;
     }
@@ -176,6 +177,15 @@ STMT:
     | SEMICOLON {
         $$ = nullptr;
     }
+    | RETURN_STMT {
+        $$ = $1;
+    }
+    | WHILE_STMT {
+        $$ = $1;
+    }
+    | BLOCK_STMT {
+        $$ = $1;
+    }
     | SLASH_COMMENT {
         // 单行注释，不生成AST节点，直接忽略
         $$ = nullptr;
@@ -183,8 +193,7 @@ STMT:
     | MULTI_COMMENT {
         // 多行注释，不生成AST节点，直接忽略
         $$ = nullptr;
-    }
-    //TODO(Lab2)：考虑更多语句类型
+    }    
     ;
 
 CONTINUE_STMT:
@@ -210,6 +219,9 @@ VAR_DECLARATION:
 
 VAR_DECL_STMT:
     /* TODO(Lab2): Implement variable declaration statement rule */
+    VAR_DECLARATION SEMICOLON {
+        $$ = new VarDeclStmt($1, @1.begin.line, @1.begin.column);
+    }
     ;
 
 FUNC_BODY:
@@ -251,10 +263,47 @@ FOR_STMT:
 
 IF_STMT:
     /* TODO(Lab2): Implement if statement rule */
+     IF LPAREN EXPR RPAREN STMT {
+        $$ = new IfStmt($3, $5, nullptr, @1.begin.line, @1.begin.column);
+    }
+    | IF LPAREN EXPR RPAREN STMT ELSE STMT {
+        $$ = new IfStmt($3, $5, $7, @1.begin.line, @1.begin.column);
+    }
     ;
 
 
 //TODO(Lab2)：按照你补充的语句类型，实现这些语句的处理
+RETURN_STMT:
+    RETURN SEMICOLON {
+        $$ = new ReturnStmt(nullptr, @1.begin.line, @1.begin.column);
+    }
+    | RETURN EXPR SEMICOLON {
+        $$ = new ReturnStmt($2, @1.begin.line, @1.begin.column);
+    }
+    ;
+
+WHILE_STMT:
+    WHILE LPAREN EXPR RPAREN STMT {
+        $$ = new WhileStmt($3, $5, @1.begin.line, @1.begin.column);
+    }
+    ;
+
+BLOCK_STMT:
+    LBRACE RBRACE {
+        $$ = nullptr;
+    }
+    | LBRACE STMT_LIST RBRACE {
+        if (!$2 || $2->empty()) {
+            $$ = nullptr;
+            delete $2;
+        } else if ($2->size() == 1) {
+            $$ = (*$2)[0];
+            delete $2;
+        } else {
+            $$ = new BlockStmt($2, @1.begin.line, @1.begin.column);
+        }
+    }
+    ;
 
 
 PARAM_DECLARATOR:
@@ -276,10 +325,66 @@ PARAM_DECLARATOR_LIST:
         $$ = new std::vector<ParamDeclarator*>();
     }
     //TODO(Lab2)：考虑函数形参列表的构成情况
+    | PARAM_DECLARATOR {
+        $$ = new std::vector<ParamDeclarator*>();
+        $$->push_back($1);
+    }
+    | PARAM_DECLARATOR_LIST COMMA PARAM_DECLARATOR {
+        $$ = $1;
+        $$->push_back($3);
+    }
     ;
 
 VAR_DECLARATOR:
     //TODO(Lab2)：完成变量声明符的处理
+    LEFT_VAL_EXPR {
+        $$ = new VarDeclarator($1, nullptr, @1.begin.line, @1.begin.column);
+    }
+    | LEFT_VAL_EXPR ASSIGN INITIALIZER {
+        $$ = new VarDeclarator($1, $3, @1.begin.line, @1.begin.column);
+    }
+    | IDENT LBRACKET RBRACKET {
+        ExprNode* lval = new LiteralExpr(0, @1.begin.line, @1.begin.column);
+        std::vector<ExprNode*>* dim = new std::vector<ExprNode*>();
+        dim->emplace_back(new LiteralExpr(-1, @2.begin.line, @2.begin.column));
+        $$ = new VarDeclarator(lval, nullptr, @1.begin.line, @1.begin.column);
+    }
+    | IDENT LBRACKET RBRACKET ARRAY_DIMENSION_EXPR_LIST {
+        ExprNode* lval = new LiteralExpr(0, @1.begin.line, @1.begin.column);
+        std::vector<InitDecl*>* init_list = new std::vector<InitDecl*>();
+        for (ExprNode* expr : *$4) {
+            init_list->push_back(new Initializer(expr, expr->line_num, expr->col_num));
+        }
+        InitDecl* init = new InitializerList(init_list, @4.begin.line, @4.begin.column);
+        $$ = new VarDeclarator(lval, init, @1.begin.line, @1.begin.column);
+    }
+    | IDENT LBRACKET RBRACKET ARRAY_DIMENSION_EXPR_LIST ASSIGN INITIALIZER {
+        ExprNode* lval = new LiteralExpr(0, @1.begin.line, @1.begin.column);
+        std::vector<InitDecl*>* init_list = new std::vector<InitDecl*>();
+        for (ExprNode* expr : *$4) {
+            init_list->push_back(new Initializer(expr, expr->line_num, expr->col_num));
+        }
+        InitDecl* init = new InitializerList(init_list, @4.begin.line, @4.begin.column);
+        $$ = new VarDeclarator(lval, init, @1.begin.line, @1.begin.column);
+    }
+    | IDENT ARRAY_DIMENSION_EXPR_LIST {
+        ExprNode* lval = new LiteralExpr(0, @1.begin.line, @1.begin.column);
+        std::vector<InitDecl*>* init_list = new std::vector<InitDecl*>();
+        for (ExprNode* expr : *$2) {
+            init_list->push_back(new Initializer(expr, expr->line_num, expr->col_num));
+        }
+        InitDecl* init = new InitializerList(init_list, @2.begin.line, @2.begin.column);
+        $$ = new VarDeclarator(lval, init, @1.begin.line, @1.begin.column);
+    }
+    | IDENT ARRAY_DIMENSION_EXPR_LIST ASSIGN INITIALIZER {
+        ExprNode* lval = new LiteralExpr(0, @1.begin.line, @1.begin.column);
+        std::vector<InitDecl*>* init_list = new std::vector<InitDecl*>();
+        for (ExprNode* expr : *$2) {
+            init_list->push_back(new Initializer(expr, expr->line_num, expr->col_num));
+        }
+        InitDecl* init = new InitializerList(init_list, @2.begin.line, @2.begin.column);
+        $$ = new VarDeclarator(lval, init, @1.begin.line, @1.begin.column);
+    }
     ;
 
 VAR_DECLARATOR_LIST:
@@ -295,7 +400,12 @@ VAR_DECLARATOR_LIST:
 
 INITIALIZER:
     /* TODO(Lab2): Implement variable initializer rule */
-    ;
+    NOCOMMA_EXPR {
+        $$ = new Initializer($1, @1.begin.line, @1.begin.column);
+    }
+    | LBRACE INITIALIZER_LIST RBRACE {
+        $$ = new InitializerList($2, @1.begin.line, @1.begin.column);
+    };
 
 INITIALIZER_LIST:
     INITIALIZER {
@@ -310,6 +420,9 @@ INITIALIZER_LIST:
 
 ASSIGN_EXPR:
     // TODO(Lab2): 完成赋值表达式的处理
+    LEFT_VAL_EXPR ASSIGN EXPR {
+        $$ = new AssignExpr($1, $3, @2.begin.line, @2.begin.column);
+    }
     ;
 
 EXPR_LIST:
@@ -352,27 +465,78 @@ NOCOMMA_EXPR:
 
 LOGICAL_OR_EXPR:
     /* TODO(Lab2): Implement logical OR expression rule */
-    ;
+    LOGICAL_AND_EXPR {
+        $$ = $1;
+    }
+    | LOGICAL_OR_EXPR OR LOGICAL_AND_EXPR {
+        $$ = new BinaryExpr(Operator::OR, $1, $3, @2.begin.line, @2.begin.column);
+    };
 
 LOGICAL_AND_EXPR:
     /* TODO(Lab2): Implement logical AND expression rule */
-    ;
+    EQUALITY_EXPR {
+        $$ = $1;
+    }
+    | LOGICAL_AND_EXPR AND EQUALITY_EXPR {
+        $$ = new BinaryExpr(Operator::AND, $1, $3, @2.begin.line, @2.begin.column);
+    };
 
 EQUALITY_EXPR:
     /* TODO(Lab2): Implement equality expression rule */
-    ;
+    RELATIONAL_EXPR {
+        $$ = $1;
+    }
+    | EQUALITY_EXPR EQ RELATIONAL_EXPR {
+        $$ = new BinaryExpr(Operator::EQ, $1, $3, @2.begin.line, @2.begin.column);
+    }
+    | EQUALITY_EXPR NE RELATIONAL_EXPR {
+        $$ = new BinaryExpr(Operator::NEQ, $1, $3, @2.begin.line, @2.begin.column);
+    };
 
 RELATIONAL_EXPR:
     /* TODO(Lab2): Implement relational expression rule */
-    ;
+    ADDSUB_EXPR {
+        $$ = $1;
+    }
+    | RELATIONAL_EXPR LT ADDSUB_EXPR {
+        $$ = new BinaryExpr(Operator::LT, $1, $3, @2.begin.line, @2.begin.column);
+    }
+    | RELATIONAL_EXPR LE ADDSUB_EXPR {
+        $$ = new BinaryExpr(Operator::LE, $1, $3, @2.begin.line, @2.begin.column);
+    }
+    | RELATIONAL_EXPR GT ADDSUB_EXPR {
+        $$ = new BinaryExpr(Operator::GT, $1, $3, @2.begin.line, @2.begin.column);
+    }
+    | RELATIONAL_EXPR GE ADDSUB_EXPR {
+        $$ = new BinaryExpr(Operator::GE, $1, $3, @2.begin.line, @2.begin.column);
+    };
 
 ADDSUB_EXPR:
     /* TODO(Lab2): Implement addition and subtraction expression rule */
-    ;
+    MULDIV_EXPR {
+        $$ = $1;
+    }
+    | ADDSUB_EXPR PLUS MULDIV_EXPR {
+        $$ = new BinaryExpr(Operator::ADD, $1, $3, @2.begin.line, @2.begin.column);
+    }
+    | ADDSUB_EXPR MINUS MULDIV_EXPR {
+        $$ = new BinaryExpr(Operator::SUB, $1, $3, @2.begin.line, @2.begin.column);
+    };
 
 MULDIV_EXPR:
     /* TODO(Lab2): Implement multiplication and division expression rule */
-    ;
+    UNARY_EXPR {
+        $$ = $1;
+    }
+    | MULDIV_EXPR STAR UNARY_EXPR {
+        $$ = new BinaryExpr(Operator::MUL, $1, $3, @2.begin.line, @2.begin.column);
+    }
+    | MULDIV_EXPR SLASH UNARY_EXPR {
+        $$ = new BinaryExpr(Operator::DIV, $1, $3, @2.begin.line, @2.begin.column);
+    }
+    | MULDIV_EXPR MOD UNARY_EXPR {
+        $$ = new BinaryExpr(Operator::MOD, $1, $3, @2.begin.line, @2.begin.column);
+    };
 
 UNARY_EXPR:
     BASIC_EXPR {
@@ -428,6 +592,14 @@ ARRAY_DIMENSION_EXPR:
 
 ARRAY_DIMENSION_EXPR_LIST:
     /* TODO(Lab2): Implement variable dimension rule */
+    LBRACKET NOCOMMA_EXPR RBRACKET {
+        $$ = new std::vector<ExprNode*>();
+        $$->push_back($2);
+    }
+    | ARRAY_DIMENSION_EXPR_LIST LBRACKET NOCOMMA_EXPR RBRACKET {
+        $$ = $1;
+        $$->push_back($3);
+    }
     ;
 
 LEFT_VAL_EXPR:
@@ -449,14 +621,36 @@ LITERAL_EXPR:
         $$ = new LiteralExpr($1, @1.begin.line, @1.begin.column);
     }
     //TODO(Lab2): 处理更多字面量
+    | LL_CONST {
+        $$ = new LiteralExpr($1, @1.begin.line, @1.begin.column);
+    }
+    | STR_CONST {
+        $$ = new LiteralExpr($1, @1.begin.line, @1.begin.column);
+    }
+    
     ;
 
 TYPE:
     // TODO(Lab2): 完成类型的处理
+    INT {
+        $$ = TypeFactory::getBasicType(Type_t::INT);
+    }
+    | FLOAT {
+        $$ = TypeFactory::getBasicType(Type_t::FLOAT);
+    }
     ;
 
 UNARY_OP:
     // TODO(Lab2): 完成一元运算符的处理
+    PLUS {
+        $$ = Operator::ADD;
+    }
+    | MINUS {
+        $$ = Operator::SUB;
+    }
+    | NOT {
+        $$ = Operator::NOT;
+    }
     ;
 
 %%

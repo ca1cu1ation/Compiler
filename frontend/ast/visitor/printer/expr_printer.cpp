@@ -72,4 +72,11 @@ namespace FE::AST
             withChild(i + 1 == cnt, [&]() { apply(*this, *e, os); });
         }
     }
+
+    void ASTPrinter::visit(AssignExpr& node, std::ostream* os)
+    {
+        emitHeader(*os, "AssignExpr");
+        if (node.lhs) withChild(false, [&]() { apply(*this, *node.lhs, os); });
+        if (node.rhs) withChild(true, [&]() { apply(*this, *node.rhs, os); });
+    }
 }  // namespace FE::AST

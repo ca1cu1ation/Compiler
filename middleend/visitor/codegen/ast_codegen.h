@@ -132,6 +132,7 @@ namespace ME
         void visit(FE::AST::BinaryExpr& node, Module* m) override;
         void visit(FE::AST::CallExpr& node, Module* m) override;
         void visit(FE::AST::CommaExpr& node, Module* m) override;
+        void visit(FE::AST::AssignExpr& node, Module* m) override;
 
         // Statement nodes
         void visit(FE::AST::ExprStmt& node, Module* m) override;

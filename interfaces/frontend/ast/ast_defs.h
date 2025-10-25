@@ -156,12 +156,14 @@ namespace FE::AST
             long long llValue;
             float     floatValue;
         };
+        std::string strValue; // 添加字符串类型支持
 
         VarValue() : type(voidType), intValue(0) {}
         VarValue(bool v) : type(boolType), boolValue(v) {}
         VarValue(int v) : type(intType), intValue(v) {}
         VarValue(long long v) : type(llType), llValue(v) {}
         VarValue(float v) : type(floatType), floatValue(v) {}
+        VarValue(const std::string& v) : type(nullptr), strValue(v) {}
 
         struct Proxy
         {
