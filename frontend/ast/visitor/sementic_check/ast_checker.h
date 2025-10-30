@@ -111,7 +111,6 @@ namespace FE::AST
         bool visit(BinaryExpr& node) override;
         bool visit(CallExpr& node) override;
         bool visit(CommaExpr& node) override;
-        bool visit(AssignExpr& node) override;
 
         // Statement nodes
         bool visit(ExprStmt& node) override;

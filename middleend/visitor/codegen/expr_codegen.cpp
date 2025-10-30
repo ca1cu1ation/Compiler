@@ -97,13 +97,4 @@ namespace ME
         TODO("Lab3-2: Implement CommaExpr IR generation");
     }
 
-    void ASTCodeGen::visit(FE::AST::AssignExpr& node, Module* m)
-    {
-        // TODO(Lab3-2): 实现赋值表达式的 IR 生成
-        // 访问左值和右值，生成 IR 指令
-        if (node.lhs && node.rhs)
-        {
-            handleAssign(*dynamic_cast<FE::AST::LeftValExpr*>(node.lhs), *node.rhs, m);
-        }
-    }
 }  // namespace ME

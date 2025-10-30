@@ -21,8 +21,7 @@ namespace FE::AST
     class BinaryExpr;
     class CallExpr;
     class CommaExpr;
-    class AssignExpr;
-    using ExprTypeSet = TypeList<LeftValExpr, LiteralExpr, UnaryExpr, BinaryExpr, CallExpr, CommaExpr, AssignExpr>;
+    using ExprTypeSet = TypeList<LeftValExpr, LiteralExpr, UnaryExpr, BinaryExpr, CallExpr, CommaExpr>;
 
     class ExprStmt;
     class FuncDeclStmt;

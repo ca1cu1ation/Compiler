@@ -462,6 +462,7 @@ namespace  FE  {
       // RETURN_STMT
       // WHILE_STMT
       // BLOCK_STMT
+      // BREAK_STMT
       char dummy6[sizeof (FE::AST::StmtNode*)];
 
       // TYPE
@@ -711,7 +712,8 @@ namespace  FE  {
         S_LEFT_VAL_EXPR = 86,                    // LEFT_VAL_EXPR
         S_LITERAL_EXPR = 87,                     // LITERAL_EXPR
         S_TYPE = 88,                             // TYPE
-        S_UNARY_OP = 89                          // UNARY_OP
+        S_UNARY_OP = 89,                         // UNARY_OP
+        S_BREAK_STMT = 90                        // BREAK_STMT
       };
     };
 
@@ -792,6 +794,7 @@ namespace  FE  {
       case symbol_kind::S_RETURN_STMT: // RETURN_STMT
       case symbol_kind::S_WHILE_STMT: // WHILE_STMT
       case symbol_kind::S_BLOCK_STMT: // BLOCK_STMT
+      case symbol_kind::S_BREAK_STMT: // BREAK_STMT
         value.move< FE::AST::StmtNode* > (std::move (that.value));
         break;
 
@@ -1191,6 +1194,7 @@ switch (yykind)
       case symbol_kind::S_RETURN_STMT: // RETURN_STMT
       case symbol_kind::S_WHILE_STMT: // WHILE_STMT
       case symbol_kind::S_BLOCK_STMT: // BLOCK_STMT
+      case symbol_kind::S_BREAK_STMT: // BREAK_STMT
         value.template destroy< FE::AST::StmtNode* > ();
         break;
 
@@ -2264,7 +2268,7 @@ switch (yykind)
     /// \param yyvalue   the value to check
     static bool yy_table_value_is_error_ (int yyvalue) YY_NOEXCEPT;
 
-    static const signed char yypact_ninf_;
+    static const short yypact_ninf_;
     static const signed char yytable_ninf_;
 
     /// Convert a scanner token kind \a t to a symbol kind.
@@ -2290,7 +2294,7 @@ switch (yykind)
     static const signed char yydefact_[];
 
     // YYPGOTO[NTERM-NUM].
-    static const signed char yypgoto_[];
+    static const short yypgoto_[];
 
     // YYDEFGOTO[NTERM-NUM].
     static const unsigned char yydefgoto_[];
@@ -2542,9 +2546,9 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 458,     ///< Last index in yytable_.
-      yynnts_ = 39,  ///< Number of nonterminal symbols.
-      yyfinal_ = 64 ///< Termination state number.
+      yylast_ = 474,     ///< Last index in yytable_.
+      yynnts_ = 40,  ///< Number of nonterminal symbols.
+      yyfinal_ = 67 ///< Termination state number.
     };
 
 
@@ -2660,6 +2664,7 @@ switch (yykind)
       case symbol_kind::S_RETURN_STMT: // RETURN_STMT
       case symbol_kind::S_WHILE_STMT: // WHILE_STMT
       case symbol_kind::S_BLOCK_STMT: // BLOCK_STMT
+      case symbol_kind::S_BREAK_STMT: // BREAK_STMT
         value.copy< FE::AST::StmtNode* > (YY_MOVE (that.value));
         break;
 
@@ -2791,6 +2796,7 @@ switch (yykind)
       case symbol_kind::S_RETURN_STMT: // RETURN_STMT
       case symbol_kind::S_WHILE_STMT: // WHILE_STMT
       case symbol_kind::S_BLOCK_STMT: // BLOCK_STMT
+      case symbol_kind::S_BREAK_STMT: // BREAK_STMT
         value.move< FE::AST::StmtNode* > (YY_MOVE (s.value));
         break;
 
@@ -2914,7 +2920,7 @@ switch (yykind)
 
 #line 4 "frontend/parser/yacc.y"
 } //  FE 
-#line 2918 "frontend/parser/yacc.h"
+#line 2924 "frontend/parser/yacc.h"
 
 
 

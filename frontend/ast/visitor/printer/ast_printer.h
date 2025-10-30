@@ -39,7 +39,6 @@ namespace FE::AST
         void visit(BinaryExpr& node, std::ostream* os) override;
         void visit(CallExpr& node, std::ostream* os) override;
         void visit(CommaExpr& node, std::ostream* os) override;
-        void visit(AssignExpr& node, std::ostream* os) override;
 
         // Statement nodes
         void visit(ExprStmt& node, std::ostream* os) override;
