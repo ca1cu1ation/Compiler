@@ -3,12 +3,18 @@
 
 #include <frontend/symbol/isymbol_table.h>
 #include <map>
+#include <vector>
 
 namespace FE::Sym
 {
     class SymTable : public iSymTable<SymTable>
     {
         friend iSymTable<SymTable>;
+
+      private:
+        // 符号表结构：每个作用域是一个map，整个符号表是作用域的栈
+        std::vector<std::map<Entry*, FE::AST::VarAttr*>> symbolScopes;
+        int scopeDepth = 0;
 
         void reset_impl();
 

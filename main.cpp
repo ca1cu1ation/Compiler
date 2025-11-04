@@ -257,6 +257,7 @@ int main(int argc, char** argv)
          * 具体要做哪些工作。简单来说就是，检查是否存在上述的语义错误，以及
          * 维护符号属性，如变量的类型、函数的参数等以供后续的 IR 生成使用。
          * 因此框架中保留了较为简单的几个 `visit` 方法的实现作为示例，你可以参考它们来实现其他节点的检查逻辑。
+         * ./bin/compiler testcase/semant/undef1.sy
          */
         FE::AST::ASTChecker checker;
         bool                accept = apply(checker, *ast);

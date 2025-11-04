@@ -5,10 +5,31 @@ namespace FE::AST
 {
     bool ASTChecker::visit(Root& node)
     {
-        // TODO(Lab3-1): 实现根节点的语义检查
-        // 重置符号表，遍历所有顶层语句进行检查，确保存在main函数
-        (void)node;
-        TODO("Lab3-1: Implement Root node semantic checking");
+        // 重置符号表
+        symTable.reset();
+        mainExists = false;
+
+        // 遍历所有顶层语句进行检查
+        for (auto stmt : *node.getStmts())
+        {
+            if (auto funcDecl = dynamic_cast<FuncDeclStmt*>(stmt))
+            {
+                if (funcDecl->entry->getName() == "main" && funcDecl->retType == intType && funcDecl->params->empty())
+                {
+                    mainExists = true;
+                }
+            }
+            apply(*this, *stmt);
+        }
+
+        // 确保存在 main 函数
+        if (!mainExists)
+        {
+            errors.push_back("Error: Main function not found.");
+            return false;
+        }
+
+        return errors.empty();
     }
 
     void ASTChecker::libFuncRegister()

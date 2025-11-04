@@ -13,73 +13,155 @@ namespace FE::AST
 
     bool ASTChecker::visit(FuncDeclStmt& node)
     {
-        // TODO(Lab3-1): 实现函数声明的语义检查
-        // 检查作用域，记录函数信息，处理形参和函数体，检查返回语句
-        (void)node;
-        TODO("Lab3-1: Implement FuncDeclStmt semantic checking");
+        // 检查函数是否已在当前作用域中声明
+        if (symTable.getSymbol(node.entry))
+        {
+            errors.push_back("Error: Function " + node.entry->getName() + " already declared.");
+            return false;
+        }
+
+        // 将函数添加到符号表
+        VarAttr varAttr;
+        varAttr.type = node.retType;
+        varAttr.isConstDecl = false;
+        symTable.addSymbol(node.entry, varAttr);
+
+        // 检查形参
+        if (node.params)
+        {
+            for (auto& param : *node.params)
+            {
+                if (!apply(*this, *param))
+                    return false;
+            }
+        }
+
+        // 检查函数体
+        if (node.body && !apply(*this, *node.body))
+            return false;
+
+        return true;
     }
 
     bool ASTChecker::visit(VarDeclStmt& node)
     {
-        // TODO(Lab3-1): 实现变量声明语句的语义检查
-        // 空声明直接通过，否则委托给变量声明处理
-        (void)node;
-        TODO("Lab3-1: Implement VarDeclStmt semantic checking");
+        // 检查变量声明语句
+        bool accept = apply(*this, *node.decl);
+        if (!accept){
+            errors.push_back("Error: Invalid variable declaration.");
+            return false;
+        }
+
+        return true;
     }
 
     bool ASTChecker::visit(BlockStmt& node)
     {
-        // TODO(Lab3-1): 实现块语句的语义检查
-        // 进入新作用域，逐条访问语句，退出作用域
-        (void)node;
-        TODO("Lab3-1: Implement BlockStmt semantic checking");
+        // 进入新作用域
+        symTable.enterScope();
+
+        // 逐条检查语句
+        for (auto& stmt : *node.stmts)
+        {
+            if (!apply(*this, *stmt))
+            {
+                symTable.exitScope();
+                return false;
+            }
+        }
+
+        // 退出作用域
+        symTable.exitScope();
+        return true;
     }
 
     bool ASTChecker::visit(ReturnStmt& node)
     {
-        // TODO(Lab3-1): 实现返回语句的语义检查
-        // 设置返回标记，检查作用域，检查返回值类型匹配
-        (void)node;
-        TODO("Lab3-1: Implement ReturnStmt semantic checking");
+        // 检查返回值类型是否匹配
+        if (node.retExpr && !apply(*this, *node.retExpr))
+            return false;
+
+        // 设置返回标记
+        funcHasReturn = true;
+        return true;
     }
 
     bool ASTChecker::visit(WhileStmt& node)
     {
-        // TODO(Lab3-1): 实现while循环的语义检查
-        // 检查作用域，访问条件表达式，管理循环深度，访问循环体
-        (void)node;
-        TODO("Lab3-1: Implement WhileStmt semantic checking");
+        // 检查条件表达式
+        if (!apply(*this, *node.cond))
+            return false;
+
+        // 管理循环深度
+        loopDepth++;
+        bool result = apply(*this, *node.body);
+        loopDepth--;
+
+        return result;
     }
 
     bool ASTChecker::visit(IfStmt& node)
     {
-        // TODO(Lab3-1): 实现if语句的语义检查
-        // 检查作用域，访问条件表达式，分别访问then和else分支
-        (void)node;
-        TODO("Lab3-1: Implement IfStmt semantic checking");
+        // 检查条件表达式
+        if (!apply(*this, *node.cond))
+            return false;
+
+        // 检查 then 分支
+        if (!apply(*this, *node.thenStmt))
+            return false;
+
+        // 检查 else 分支（如果存在）
+        if (node.elseStmt && !apply(*this, *node.elseStmt))
+            return false;
+
+        return true;
     }
 
     bool ASTChecker::visit(BreakStmt& node)
     {
-        // TODO(Lab3-1): 实现break语句的语义检查
-        // 检查是否在循环内使用
         (void)node;
-        TODO("Lab3-1: Implement BreakStmt semantic checking");
+        // 检查是否在循环内
+        if (loopDepth == 0)
+        {
+            errors.push_back("Error: Break statement not within a loop.");
+            return false;
+        }
+
+        return true;
     }
 
     bool ASTChecker::visit(ContinueStmt& node)
     {
-        // TODO(Lab3-1): 实现continue语句的语义检查
-        // 检查是否在循环内使用
         (void)node;
-        TODO("Lab3-1: Implement ContinueStmt semantic checking");
+        // 检查是否在循环内
+        if (loopDepth == 0)
+        {
+            errors.push_back("Error: Continue statement not within a loop.");
+            return false;
+        }
+
+        return true;
     }
 
     bool ASTChecker::visit(ForStmt& node)
     {
-        // TODO(Lab3-1): 实现for循环的语义检查
-        // 检查作用域，访问初始化、条件、步进表达式，管理循环深度
-        (void)node;
-        TODO("Lab3-1: Implement ForStmt semantic checking");
+        // 检查初始化表达式
+        if (node.init && !apply(*this, *node.init))
+            return false;
+
+        // 检查条件表达式
+        if (node.cond && !apply(*this, *node.cond))
+            return false;
+
+        // 检查步进表达式
+        if (node.step && !apply(*this, *node.step))
+            return false;
+
+        // 管理循环深度
+        loopDepth++;
+        bool result = apply(*this, *node.body);
+        loopDepth--;
+
+        return result;
     }
 }  // namespace FE::AST
