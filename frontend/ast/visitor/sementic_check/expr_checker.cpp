@@ -9,10 +9,19 @@ namespace FE::AST
         auto varAttr = symTable.getSymbol(node.entry);
         if (!varAttr)
         {
-            errors.push_back("Error: Variable " + node.entry->getName() + " not declared.");
+            errors.push_back("Error: Variable " + node.entry->getName() + " not declared at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
+            return false;
+        }
+        // 检查是否对 const 变量进行赋值
+        if (varAttr->isConstDecl && varAttr->isInitialized)
+        {
+            errors.push_back("Error: Cannot assign to const variable " + node.entry->getName() + " at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
             return false;
         }
 
+        // 设置变量为已初始化
+        varAttr->isInitialized = true;
+        
         // 检查数组下标
         if (node.indices)
         {
@@ -22,7 +31,7 @@ namespace FE::AST
                     return false;
                 if (index->attr.val.value.type != intType)
                 {
-                    errors.push_back("Error: Array index must be of type int.");
+                    errors.push_back("Error: Array index must be of type int at line " + std::to_string(index->line_num) + ", column " + std::to_string(index->col_num) + ".");
                     return false;
                 }
             }
@@ -49,11 +58,19 @@ namespace FE::AST
         if (!apply(*this, *node.expr))
             return false;
 
-        // 检查操作数类型
-        if (node.op == Operator::NOT && node.expr->attr.val.value.type != boolType)
+        // 检查操作数类型并进行隐式类型转换
+        if (node.op == Operator::NOT)
         {
-            errors.push_back("Error: Unary NOT operator requires a boolean operand.");
-            return false;
+            if (node.expr->attr.val.value.type == intType)
+            {
+                // 隐式转换 int -> bool
+                node.expr->attr.val.value.type = boolType;
+            }
+            else if (node.expr->attr.val.value.type != boolType)
+            {
+                errors.push_back("Error: Unary NOT operator requires a boolean or integer operand at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
+                return false;
+            }
         }
 
         // 设置表达式属性
@@ -68,14 +85,45 @@ namespace FE::AST
         if (!apply(*this, *node.lhs) || !apply(*this, *node.rhs))
             return false;
 
-        // 检查操作数类型
+        // 检查操作数类型并进行隐式类型转换
         if (node.op == Operator::ADD || node.op == Operator::SUB ||
             node.op == Operator::MUL || node.op == Operator::DIV)
         {
+            if (node.lhs->attr.val.value.type == boolType)
+            {
+                // 隐式转换 bool -> int
+                node.lhs->attr.val.value.type = intType;
+            }
+            if (node.rhs->attr.val.value.type == boolType)
+            {
+                // 隐式转换 bool -> int
+                node.rhs->attr.val.value.type = intType;
+            }
+
             if (node.lhs->attr.val.value.type != intType ||
                 node.rhs->attr.val.value.type != intType)
             {
-                errors.push_back("Error: Arithmetic operators require integer operands.");
+                errors.push_back("Error: Arithmetic operators require integer operands at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
+                return false;
+            }
+        }
+        else if (node.op == Operator::AND || node.op == Operator::OR)
+        {
+            if (node.lhs->attr.val.value.type == intType)
+            {
+                // 隐式转换 int -> bool
+                node.lhs->attr.val.value.type = boolType;
+            }
+            if (node.rhs->attr.val.value.type == intType)
+            {
+                // 隐式转换 int -> bool
+                node.rhs->attr.val.value.type = boolType;
+            }
+
+            if (node.lhs->attr.val.value.type != boolType ||
+                node.rhs->attr.val.value.type != boolType)
+            {
+                errors.push_back("Error: Logical operators require boolean operands at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
                 return false;
             }
         }
@@ -89,19 +137,21 @@ namespace FE::AST
     bool ASTChecker::visit(CallExpr& node)
     {
         // 检查函数是否存在
-        auto funcAttr = symTable.getSymbol(node.func);
-        if (!funcAttr)
+        auto it = funcDecls.find(node.func);
+        if (it == funcDecls.end())
         {
-            errors.push_back("Error: Function " + node.func->getName() + " not declared.");
+            errors.push_back("Error: Function " + node.func->getName() + " not declared at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
             return false;
         }
 
+        auto funcDecl = it->second;
+
         // 检查参数数量和类型
-        if (node.args && funcAttr->initList.empty())
+        if (node.args && funcDecl->params)
         {
-            if (node.args->size() != funcAttr->initList.size())
+            if (node.args->size() != funcDecl->params->size())
             {
-                errors.push_back("Error: Argument count mismatch for function " + node.func->getName() + ".");
+                errors.push_back("Error: Argument count mismatch for function " + node.func->getName() + " at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
                 return false;
             }
 
@@ -109,16 +159,16 @@ namespace FE::AST
             {
                 if (!apply(*this, *(*node.args)[i]))
                     return false;
-                if ((*node.args)[i]->attr.val.value.type != funcAttr->initList[i].type)
+                if ((*node.args)[i]->attr.val.value.type != (*funcDecl->params)[i]->attr.val.value.type)
                 {
-                    errors.push_back("Error: Argument type mismatch for function " + node.func->getName() + ".");
+                    errors.push_back("Error: Argument type mismatch for function " + node.func->getName() + " at line " + std::to_string((*node.args)[i]->line_num) + ", column " + std::to_string((*node.args)[i]->col_num) + ".");
                     return false;
                 }
             }
         }
 
         // 设置表达式属性
-        node.attr.val.value.type = funcAttr->type;
+        node.attr.val.value.type = funcDecl->retType;
         node.attr.val.isConstexpr = false;
         return true;
     }

@@ -264,7 +264,7 @@ int main(int argc, char** argv)
         if (!accept)
         {
             cerr << "Semantic check failed with " << checker.errors.size() << " errors." << endl;
-            for (const auto& err : checker.errors) cerr << "Error: " << err << endl;
+            for (const auto& err : checker.errors) cerr << err << endl;
             ret = 1;
             goto cleanup_ast;
         }

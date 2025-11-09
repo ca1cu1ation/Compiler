@@ -66,7 +66,7 @@
 %token <long long> LL_CONST
 %token <std::string> STR_CONST ERR_TOKEN SLASH_COMMENT MULTI_COMMENT
 %token ASSIGN NE EQ LE GE LT GT PLUS MINUS STAR SLASH MOD AND OR NOT
-%token INT FLOAT STRING
+%token INT FLOAT STRING VOID
 %token <std::string> IDENT 
 
 %token IF ELSE FOR WHILE CONTINUE BREAK SWITCH CASE GOTO DO RETURN CONST
@@ -629,6 +629,9 @@ TYPE:
     }
     | FLOAT {
         $$ = TypeFactory::getBasicType(Type_t::FLOAT);
+    }
+    | VOID {
+        $$ = TypeFactory::getBasicType(Type_t::VOID);
     }
     ;
 

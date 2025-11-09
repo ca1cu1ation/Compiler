@@ -12,23 +12,19 @@ namespace FE::AST
         // 遍历所有顶层语句进行检查
         for (auto stmt : *node.getStmts())
         {
-            if (auto funcDecl = dynamic_cast<FuncDeclStmt*>(stmt))
-            {
-                if (funcDecl->entry->getName() == "main" && funcDecl->retType == intType && funcDecl->params->empty())
-                {
-                    mainExists = true;
-                }
-            }
             apply(*this, *stmt);
         }
 
         // 确保存在 main 函数
-        if (!mainExists)
-        {
-            errors.push_back("Error: Main function not found.");
+        auto mainEntry = FE::Sym::Entry::getEntry("main");
+        auto it = funcDecls.find(mainEntry);
+        if (it == funcDecls.end() || it->second->retType != intType || !it->second->params->empty())
+        {   
+            errors.push_back("Error: Main function not found or has incorrect signature.");
             return false;
         }
 
+        mainExists = true;
         return errors.empty();
     }
 

@@ -12,19 +12,22 @@ namespace FE::AST
     }
 
     bool ASTChecker::visit(FuncDeclStmt& node)
-    {
-        // 检查函数是否已在当前作用域中声明
-        if (symTable.getSymbol(node.entry))
+    {   
+        // 进入新作用域
+        symTable.enterScope();
+
+        // 检查函数是否已在函数声明表中声明
+        if (funcDecls.find(node.entry) != funcDecls.end())
         {
-            errors.push_back("Error: Function " + node.entry->getName() + " already declared.");
+            errors.push_back("Error: Function " + node.entry->getName() + " already declared at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
             return false;
         }
 
-        // 将函数添加到符号表
+        // 将函数添加到函数声明表
         VarAttr varAttr;
         varAttr.type = node.retType;
         varAttr.isConstDecl = false;
-        symTable.addSymbol(node.entry, varAttr);
+        funcDecls[node.entry] = &node;
 
         // 检查形参
         if (node.params)
@@ -40,6 +43,8 @@ namespace FE::AST
         if (node.body && !apply(*this, *node.body))
             return false;
 
+        // 退出作用域
+        symTable.exitScope();
         return true;
     }
 
@@ -48,7 +53,7 @@ namespace FE::AST
         // 检查变量声明语句
         bool accept = apply(*this, *node.decl);
         if (!accept){
-            errors.push_back("Error: Invalid variable declaration.");
+            errors.push_back("Error: Invalid variable declaration at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
             return false;
         }
 
@@ -87,7 +92,10 @@ namespace FE::AST
     }
 
     bool ASTChecker::visit(WhileStmt& node)
-    {
+    {   
+        // 进入新作用域
+        symTable.enterScope();
+
         // 检查条件表达式
         if (!apply(*this, *node.cond))
             return false;
@@ -97,11 +105,16 @@ namespace FE::AST
         bool result = apply(*this, *node.body);
         loopDepth--;
 
+        // 退出作用域
+        symTable.exitScope();
         return result;
     }
 
     bool ASTChecker::visit(IfStmt& node)
-    {
+    {   
+        // 进入新作用域
+        symTable.enterScope();
+
         // 检查条件表达式
         if (!apply(*this, *node.cond))
             return false;
@@ -114,6 +127,8 @@ namespace FE::AST
         if (node.elseStmt && !apply(*this, *node.elseStmt))
             return false;
 
+        // 退出作用域
+        symTable.exitScope();
         return true;
     }
 
@@ -123,7 +138,7 @@ namespace FE::AST
         // 检查是否在循环内
         if (loopDepth == 0)
         {
-            errors.push_back("Error: Break statement not within a loop.");
+            errors.push_back("Error: Break statement not within a loop at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
             return false;
         }
 
@@ -136,7 +151,7 @@ namespace FE::AST
         // 检查是否在循环内
         if (loopDepth == 0)
         {
-            errors.push_back("Error: Continue statement not within a loop.");
+            errors.push_back("Error: Continue statement not within a loop at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
             return false;
         }
 
@@ -144,7 +159,10 @@ namespace FE::AST
     }
 
     bool ASTChecker::visit(ForStmt& node)
-    {
+    {   
+        // 进入新作用域
+        symTable.enterScope();
+
         // 检查初始化表达式
         if (node.init && !apply(*this, *node.init))
             return false;
@@ -162,6 +180,8 @@ namespace FE::AST
         bool result = apply(*this, *node.body);
         loopDepth--;
 
+        // 退出作用域
+        symTable.exitScope();
         return result;
     }
 }  // namespace FE::AST

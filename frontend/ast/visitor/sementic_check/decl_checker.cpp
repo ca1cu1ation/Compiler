@@ -8,7 +8,11 @@ namespace FE::AST
         // 示例实现：单个初始化器的语义检查
         // 1) 访问初始化值表达式
         // 2) 将子表达式的属性拷贝到当前节点
-        ASSERT(node.init_val && "Null initializer value");
+        if (!node.init_val)
+        {
+            errors.push_back("Error: Null initializer value at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
+            return false;
+        }
         bool res  = apply(*this, *node.init_val);
         node.attr = node.init_val->attr;
         return res;
@@ -31,11 +35,13 @@ namespace FE::AST
     bool ASTChecker::visit(VarDeclarator& node)
     {
         // 实现变量声明器的语义检查
-        ASSERT(node.lval && "Null lval in VarDeclarator");
+        if (!node.lval)
+        {
+            errors.push_back("Error: Null lval in VarDeclarator at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
+            return false;
+        }
 
-        // 访问左值表达式
-        bool res = apply(*this, *node.lval);
-
+        bool res = true;
         // 同步属性
         node.attr = node.lval->attr;
 
@@ -43,8 +49,11 @@ namespace FE::AST
         if (node.init)
         {
             res &= apply(*this, *node.init);
-            // 检查初始化器类型是否匹配
-            ASSERT(node.attr.op == node.init->attr.op && "Type mismatch in initializer");
+            if (node.attr.op != node.init->attr.op)
+            {
+                errors.push_back("Error: Type mismatch in initializer at line " + std::to_string(node.init->line_num) + ", column " + std::to_string(node.init->col_num) + ".");
+                res = false;
+            }
         }
 
         return res;
@@ -53,20 +62,24 @@ namespace FE::AST
     bool ASTChecker::visit(ParamDeclarator& node)
     {
         // 实现函数形参的语义检查
-        ASSERT(node.type && "Null type in ParamDeclarator");
-
-        // 检查形参重定义
-        if (symTable.getSymbol(node.entry))
-        {
-            errors.push_back("Redefinition of parameter");
+        if(!node.type){
+            errors.push_back("Error: Null type in ParamDeclarator at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
             return false;
         }
 
-        // 将形参加入符号表        
+        // 尝试将形参加入符号表                 
         VarAttr varAttr;
         varAttr.type = node.type;
         varAttr.isConstDecl = false; // 假设形参不是 const 声明
-        symTable.addSymbol(node.entry, varAttr);
+        try
+        {
+            symTable.addSymbol(node.entry, varAttr);
+        }
+        catch (const std::runtime_error& e)
+        {
+            errors.push_back("Error: " + std::string(e.what()) + " at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
+            return false;
+        }
 
         return true;
     }
@@ -84,7 +97,7 @@ namespace FE::AST
             auto* leftValExpr = dynamic_cast<LeftValExpr*>(decl->lval);
             if (!leftValExpr)
             {
-                errors.push_back("Invalid left value in variable declaration");
+                errors.push_back("Error: Invalid left value in variable declaration at line " + std::to_string(decl->line_num) + ", column " + std::to_string(decl->col_num) + ".");
                 res = false;
                 continue;
             }
@@ -92,27 +105,30 @@ namespace FE::AST
             // 获取 entry
             Entry* entry = leftValExpr->entry;
 
-            // 检查重定义
-            if (symTable.getSymbol(entry))
+            // 变量声明器语义检查
+            res &= apply(*this, *decl);
+
+            // 尝试将符号加入符号表
+            VarAttr varAttr;
+            varAttr.type = node.type;
+            varAttr.isConstDecl = node.isConstDecl;
+            varAttr.isInitialized = (decl->init != nullptr);  // 如果有初始化器，则标记为已初始化
+            try
             {
-                errors.push_back("Redefinition of variable");
+                symTable.addSymbol(entry, varAttr);
+            }
+            catch (const std::runtime_error& e)
+            {
+                errors.push_back("Error: " + std::string(e.what()) + " at line " + std::to_string(decl->line_num) + ", column " + std::to_string(decl->col_num) + ".");
                 res = false;
                 continue;
             }
 
-            // 处理初始化器
-            if (decl->init)
+            // 根据作用域添加到全局符号表
+            if (symTable.isGlobalScope())
             {
-                res &= apply(*this, *decl->init);
-                ASSERT(decl->lval->attr.op == decl->init->attr.op && "Type mismatch in initializer");
+                glbSymbols[entry] = varAttr;
             }
-
-            // 将符号加入符号表
-            VarAttr varAttr;
-            varAttr.type = node.type;
-            varAttr.isConstDecl = node.isConstDecl;
-
-            symTable.addSymbol(entry, varAttr);
         }
 
         return res;

@@ -234,15 +234,16 @@ namespace FE::AST
     struct VarAttr
     {
         bool  isConstDecl;
+        bool isInitialized;  // 记录变量是否已初始化
         Type* type;
         int   scopeLevel;
 
         std::vector<int>      arrayDims;
         std::vector<VarValue> initList;
 
-        VarAttr() : isConstDecl(false), type(voidType), scopeLevel(-1), arrayDims(), initList() {}
+        VarAttr() : isConstDecl(false), isInitialized(false), type(voidType), scopeLevel(-1), arrayDims(), initList() {}
         VarAttr(Type* t, bool isConst = false, int level = -1)
-            : isConstDecl(isConst), type(t), scopeLevel(level), arrayDims(), initList()
+            : isConstDecl(isConst), isInitialized(false), type(t), scopeLevel(level), arrayDims(), initList()
         {}
     };
 
