@@ -412,8 +412,8 @@ int yyFlexLexer::yylex()
 /* %% [3.0] code to copy yytext_ptr to yytext[] goes here, if %array \ */\
 	(yy_c_buf_p) = yy_cp;
 /* %% [4.0] data tables for the DFA and the user's section 1 definitions go here */
-#define YY_NUM_RULES 60
-#define YY_END_OF_BUFFER 61
+#define YY_NUM_RULES 62
+#define YY_END_OF_BUFFER 63
 /* This struct is not used in this scanner,
    but its presence is necessary. */
 struct yy_trans_info
@@ -423,26 +423,26 @@ struct yy_trans_info
 	};
 static const flex_int16_t yy_accept[188] =
     {   0,
-        0,    0,    0,    0,   61,   60,    3,    1,    2,   36,
-       60,   33,   60,   54,   55,   31,   29,   21,   30,   60,
-       32,   52,   53,   20,   26,   28,   27,   43,   56,   57,
-       43,   43,   43,   43,   43,   43,   43,   43,   43,   43,
-       43,   58,   60,   59,   42,   42,    2,   22,    0,   44,
-       35,    0,    0,   48,   40,   38,   46,   52,    0,    0,
-       53,   24,   23,   25,   43,   43,   43,   43,   43,   13,
-       43,   43,   43,   43,    4,   43,   43,   43,   43,   43,
-       43,   34,   41,    0,    0,    0,    0,    0,   38,   46,
-        0,    0,   47,   51,   43,   43,   43,   43,   43,    6,
+        0,    0,    0,    0,   63,   62,    3,    1,    2,   38,
+       62,   33,   37,   56,   57,   31,   29,   21,   30,   62,
+       32,   54,   55,   20,   26,   28,   27,   45,   58,   59,
+       45,   45,   45,   45,   45,   45,   45,   45,   45,   45,
+       45,   60,   36,   61,   44,   44,    2,   22,    0,   46,
+       35,    0,    0,   50,   42,   40,   48,   54,    0,    0,
+       55,   24,   23,   25,   45,   45,   45,   45,   45,   13,
+       45,   45,   45,   45,    4,   45,   45,   45,   45,   45,
+       45,   34,   43,    0,    0,    0,    0,    0,   40,   48,
+        0,    0,   49,   53,   45,   45,   45,   45,   45,    6,
 
-       43,   17,   43,   43,   43,   43,   43,    0,    0,    0,
-        0,    0,   48,    0,   46,    0,    0,   43,   11,   43,
-       43,    5,   43,   12,   43,   43,   43,   16,   43,    0,
-        0,    0,    0,    0,    0,   49,    9,   15,   43,   18,
-       43,   43,   43,    7,    0,    0,    0,    0,   43,   14,
-       19,   10,    0,    0,    0,    0,   43,    0,    0,    0,
+       45,   17,   45,   45,   45,   45,   45,    0,    0,    0,
+        0,    0,   50,    0,   48,    0,    0,   45,   11,   45,
+       45,    5,   45,   12,   45,   45,   45,   16,   45,    0,
+        0,    0,    0,    0,    0,   51,    9,   15,   45,   18,
+       45,   45,   45,    7,    0,    0,    0,    0,   45,   14,
+       19,   10,    0,    0,    0,    0,   45,    0,    0,    0,
         0,    8,    0,    0,    0,    0,    0,    0,    0,    0,
-        0,    0,    0,    0,    0,    0,    0,    0,   37,    0,
-       39,    0,   50,    0,   45,    0,    0
+        0,    0,    0,    0,    0,    0,    0,    0,   39,    0,
+       41,    0,   52,    0,   47,    0,    0
     } ;
 
 static const YY_CHAR yy_ec[256] =
@@ -667,14 +667,15 @@ static const flex_int16_t yy_chk[537] =
       187,  187,  187,  187,  187,  187
     } ;
 
-static const flex_int16_t yy_rule_linenum[60] =
+static const flex_int16_t yy_rule_linenum[62] =
     {   0,
        63,   68,   69,   73,   74,   75,   76,   77,   78,   79,
        80,   81,   82,   83,   85,   87,   88,   89,   90,   92,
        93,   94,   95,   96,   97,   98,   99,  100,  101,  102,
-      103,  104,  105,  106,  107,  108,  110,  111,  124,  125,
-      132,  138,  155,  160,  166,  167,  178,  189,  200,  211,
-      212,  227,  243,  259,  260,  261,  262,  263,  264
+      103,  104,  105,  106,  107,  108,  109,  110,  112,  113,
+      125,  126,  133,  139,  156,  161,  167,  168,  179,  190,
+      201,  212,  213,  228,  244,  260,  261,  262,  263,  264,
+      265
     } ;
 
 /* The intent behind this definition is that it'll catch
@@ -723,10 +724,10 @@ static const flex_int16_t yy_rule_linenum[60] =
     // ========== 新增：多行注释处理相关变量 ==========
     static std::string multi_comment_content;
     static location multi_comment_start;
-#line 727 "frontend/parser/lexer.cpp"
+#line 728 "frontend/parser/lexer.cpp"
 /* 定义多行注释的起始状态 */
 
-#line 730 "frontend/parser/lexer.cpp"
+#line 731 "frontend/parser/lexer.cpp"
 
 #define INITIAL 0
 #define MULTI_COMMENT 1
@@ -934,7 +935,7 @@ TODO(Lab1)：参考SysY2022的定义，实现更多的词法，如浮点数、�
 */
 
 
-#line 938 "frontend/parser/lexer.cpp"
+#line 939 "frontend/parser/lexer.cpp"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -992,12 +993,12 @@ do_action:	/* This label is used only to access EOF actions. */
 			{
 			if ( yy_act == 0 )
 				std::cerr << "--scanner backing up\n";
-			else if ( yy_act < 60 )
+			else if ( yy_act < 62 )
 				std::cerr << "--accepting rule at line " << yy_rule_linenum[yy_act] <<
 				         "(\"" << yytext << "\")\n";
-			else if ( yy_act == 60 )
+			else if ( yy_act == 62 )
 				std::cerr << "--accepting default rule (\"" << yytext << "\")\n";
-			else if ( yy_act == 61 )
+			else if ( yy_act == 63 )
 				std::cerr << "--(end of buffer or a NUL)\n";
 			else
 				std::cerr << "--EOF (start condition " << YY_START << ")\n";
@@ -1197,16 +1198,26 @@ YY_RULE_SETUP
 case 36:
 YY_RULE_SETUP
 #line 108 "frontend/parser/lexer.l"
-{ RETT(NOT, loc) }
+{ RETT(BITOR, loc) }
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 110 "frontend/parser/lexer.l"
-
+#line 109 "frontend/parser/lexer.l"
+{ RETT(BITAND, loc) }
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 111 "frontend/parser/lexer.l"
+#line 110 "frontend/parser/lexer.l"
+{ RETT(NOT, loc) }
+	YY_BREAK
+case 39:
+YY_RULE_SETUP
+#line 112 "frontend/parser/lexer.l"
+
+	YY_BREAK
+case 40:
+YY_RULE_SETUP
+#line 113 "frontend/parser/lexer.l"
 { 
     // 提取注释内容（去掉"//"前缀）
     std::string comment = yytext;
@@ -1215,19 +1226,18 @@ YY_RULE_SETUP
     } else {
         comment = "";
     }
-    // 返回单行注释token
-    return YaccParser::make_SLASH_COMMENT(comment, loc);
+    // 不返回单行注释token
     // return YaccParser::make_SLASH_COMMENT(str, loc);  //思考为什么要把这一行注释掉
 }
 	YY_BREAK
-case 39:
-YY_RULE_SETUP
-#line 124 "frontend/parser/lexer.l"
-
-	YY_BREAK
-case 40:
+case 41:
 YY_RULE_SETUP
 #line 125 "frontend/parser/lexer.l"
+
+	YY_BREAK
+case 42:
+YY_RULE_SETUP
+#line 126 "frontend/parser/lexer.l"
 { 
     BEGIN(MULTI_COMMENT);
     multi_comment_start = loc;
@@ -1235,19 +1245,19 @@ YY_RULE_SETUP
 }
 	YY_BREAK
 
-case 41:
+case 43:
 YY_RULE_SETUP
-#line 132 "frontend/parser/lexer.l"
+#line 133 "frontend/parser/lexer.l"
 { 
         multi_comment_content.append("*/");
         BEGIN(INITIAL);
-        return YaccParser::make_MULTI_COMMENT(multi_comment_content, multi_comment_start);
+        //不返回多行注释token
     }
 	YY_BREAK
-case 42:
-/* rule 42 can match eol */
+case 44:
+/* rule 44 can match eol */
 YY_RULE_SETUP
-#line 138 "frontend/parser/lexer.l"
+#line 139 "frontend/parser/lexer.l"
 { 
         // 匹配任何字符（包括换行）
         multi_comment_content.append(yytext);
@@ -1258,7 +1268,7 @@ YY_RULE_SETUP
     }
 	YY_BREAK
 case YY_STATE_EOF(MULTI_COMMENT):
-#line 147 "frontend/parser/lexer.l"
+#line 148 "frontend/parser/lexer.l"
 {
         _parser.reportError(loc, "Unterminated multi-line comment");
         BEGIN(INITIAL);
@@ -1267,60 +1277,32 @@ case YY_STATE_EOF(MULTI_COMMENT):
     }
 	YY_BREAK
 
-case 43:
+case 45:
 YY_RULE_SETUP
-#line 155 "frontend/parser/lexer.l"
+#line 156 "frontend/parser/lexer.l"
 {
     auto str = std::string(yytext);
     return YaccParser::make_IDENT(str, loc); 
 }
 	YY_BREAK
-case 44:
-/* rule 44 can match eol */
+case 46:
+/* rule 46 can match eol */
 YY_RULE_SETUP
-#line 160 "frontend/parser/lexer.l"
+#line 161 "frontend/parser/lexer.l"
 { 
     std::string str(yytext);
     if (!str.empty()) str = str.substr(1, str.size() - 2);
     return YaccParser::make_STR_CONST(str, loc); 
 }
 	YY_BREAK
-case 45:
-YY_RULE_SETUP
-#line 166 "frontend/parser/lexer.l"
-
-	YY_BREAK
-case 46:
-YY_RULE_SETUP
-#line 167 "frontend/parser/lexer.l"
-{
-    try {
-        float result = convertToFloatDec(yytext);
-        return YaccParser::make_FLOAT_CONST(result, loc);
-    } catch (const std::exception& e) {
-        _parser.reportError(loc, std::string("Error parsing decimal float: ") + e.what());
-        auto str = std::string(yytext);
-        return YaccParser::make_ERR_TOKEN(str, loc);
-    }
-}
-	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 178 "frontend/parser/lexer.l"
-{
-    try {
-        float result = convertToFloatDec(yytext);
-        return YaccParser::make_FLOAT_CONST(result, loc);
-    } catch (const std::exception& e) {
-        _parser.reportError(loc, std::string("Error parsing decimal float: ") + e.what());
-        auto str = std::string(yytext);
-        return YaccParser::make_ERR_TOKEN(str, loc);
-    }
-}
+#line 167 "frontend/parser/lexer.l"
+
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 189 "frontend/parser/lexer.l"
+#line 168 "frontend/parser/lexer.l"
 {
     try {
         float result = convertToFloatDec(yytext);
@@ -1334,7 +1316,35 @@ YY_RULE_SETUP
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 200 "frontend/parser/lexer.l"
+#line 179 "frontend/parser/lexer.l"
+{
+    try {
+        float result = convertToFloatDec(yytext);
+        return YaccParser::make_FLOAT_CONST(result, loc);
+    } catch (const std::exception& e) {
+        _parser.reportError(loc, std::string("Error parsing decimal float: ") + e.what());
+        auto str = std::string(yytext);
+        return YaccParser::make_ERR_TOKEN(str, loc);
+    }
+}
+	YY_BREAK
+case 50:
+YY_RULE_SETUP
+#line 190 "frontend/parser/lexer.l"
+{
+    try {
+        float result = convertToFloatDec(yytext);
+        return YaccParser::make_FLOAT_CONST(result, loc);
+    } catch (const std::exception& e) {
+        _parser.reportError(loc, std::string("Error parsing decimal float: ") + e.what());
+        auto str = std::string(yytext);
+        return YaccParser::make_ERR_TOKEN(str, loc);
+    }
+}
+	YY_BREAK
+case 51:
+YY_RULE_SETUP
+#line 201 "frontend/parser/lexer.l"
 {
     try {
         float result = convertToFloatHex(yytext);
@@ -1346,14 +1356,14 @@ YY_RULE_SETUP
     }
 }
 	YY_BREAK
-case 50:
-YY_RULE_SETUP
-#line 211 "frontend/parser/lexer.l"
-
-	YY_BREAK
-case 51:
+case 52:
 YY_RULE_SETUP
 #line 212 "frontend/parser/lexer.l"
+
+	YY_BREAK
+case 53:
+YY_RULE_SETUP
+#line 213 "frontend/parser/lexer.l"
 {
     try {
         bool isLL = false;
@@ -1369,9 +1379,9 @@ YY_RULE_SETUP
     }
 }
 	YY_BREAK
-case 52:
+case 54:
 YY_RULE_SETUP
-#line 227 "frontend/parser/lexer.l"
+#line 228 "frontend/parser/lexer.l"
 {
     try {
         bool isLL = false;
@@ -1388,9 +1398,9 @@ YY_RULE_SETUP
     }
 }
 	YY_BREAK
-case 53:
+case 55:
 YY_RULE_SETUP
-#line 243 "frontend/parser/lexer.l"
+#line 244 "frontend/parser/lexer.l"
 {
     try {
         bool isLL = false;
@@ -1407,46 +1417,46 @@ YY_RULE_SETUP
     }
 }
 	YY_BREAK
-case 54:
-YY_RULE_SETUP
-#line 259 "frontend/parser/lexer.l"
-{ RETT(LPAREN, loc) }
-	YY_BREAK
-case 55:
-YY_RULE_SETUP
-#line 260 "frontend/parser/lexer.l"
-{ RETT(RPAREN, loc) }
-	YY_BREAK
 case 56:
 YY_RULE_SETUP
-#line 261 "frontend/parser/lexer.l"
-{ RETT(LBRACKET, loc) }
+#line 260 "frontend/parser/lexer.l"
+{ RETT(LPAREN, loc) }
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
-#line 262 "frontend/parser/lexer.l"
-{ RETT(RBRACKET, loc) }
+#line 261 "frontend/parser/lexer.l"
+{ RETT(RPAREN, loc) }
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
-#line 263 "frontend/parser/lexer.l"
-{ RETT(LBRACE, loc) }
+#line 262 "frontend/parser/lexer.l"
+{ RETT(LBRACKET, loc) }
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
-#line 264 "frontend/parser/lexer.l"
-{ RETT(RBRACE, loc) }
-	YY_BREAK
-case YY_STATE_EOF(INITIAL):
-#line 267 "frontend/parser/lexer.l"
-{ RETT(END, loc); }
+#line 263 "frontend/parser/lexer.l"
+{ RETT(RBRACKET, loc) }
 	YY_BREAK
 case 60:
 YY_RULE_SETUP
-#line 269 "frontend/parser/lexer.l"
+#line 264 "frontend/parser/lexer.l"
+{ RETT(LBRACE, loc) }
+	YY_BREAK
+case 61:
+YY_RULE_SETUP
+#line 265 "frontend/parser/lexer.l"
+{ RETT(RBRACE, loc) }
+	YY_BREAK
+case YY_STATE_EOF(INITIAL):
+#line 268 "frontend/parser/lexer.l"
+{ RETT(END, loc); }
+	YY_BREAK
+case 62:
+YY_RULE_SETUP
+#line 270 "frontend/parser/lexer.l"
 ECHO;
 	YY_BREAK
-#line 1450 "frontend/parser/lexer.cpp"
+#line 1460 "frontend/parser/lexer.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -2562,7 +2572,7 @@ void yyfree (void * ptr )
 
 /* %ok-for-header */
 
-#line 269 "frontend/parser/lexer.l"
+#line 270 "frontend/parser/lexer.l"
 
 
 int handleTab()

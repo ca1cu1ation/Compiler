@@ -1175,74 +1175,56 @@ namespace  FE  {
 #line 1176 "frontend/parser/yacc.cpp"
     break;
 
-  case 17: // STMT: SLASH_COMMENT
-#line 194 "frontend/parser/yacc.y"
-                    {
-        // 单行注释，不生成AST节点，直接忽略
-        yylhs.value.as < FE::AST::StmtNode* > () = nullptr;
-    }
-#line 1185 "frontend/parser/yacc.cpp"
-    break;
-
-  case 18: // STMT: MULTI_COMMENT
-#line 198 "frontend/parser/yacc.y"
-                    {
-        // 多行注释，不生成AST节点，直接忽略
-        yylhs.value.as < FE::AST::StmtNode* > () = nullptr;
-    }
-#line 1194 "frontend/parser/yacc.cpp"
-    break;
-
-  case 19: // CONTINUE_STMT: CONTINUE SEMICOLON
-#line 205 "frontend/parser/yacc.y"
+  case 17: // CONTINUE_STMT: CONTINUE SEMICOLON
+#line 197 "frontend/parser/yacc.y"
                        {
         yylhs.value.as < FE::AST::StmtNode* > () = new ContinueStmt(yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1202 "frontend/parser/yacc.cpp"
+#line 1184 "frontend/parser/yacc.cpp"
     break;
 
-  case 20: // EXPR_STMT: EXPR SEMICOLON
-#line 211 "frontend/parser/yacc.y"
+  case 18: // EXPR_STMT: EXPR SEMICOLON
+#line 203 "frontend/parser/yacc.y"
                    {
         yylhs.value.as < FE::AST::StmtNode* > () = new ExprStmt(yystack_[1].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1210 "frontend/parser/yacc.cpp"
+#line 1192 "frontend/parser/yacc.cpp"
     break;
 
-  case 21: // VAR_DECLARATION: TYPE VAR_DECLARATOR_LIST
-#line 217 "frontend/parser/yacc.y"
+  case 19: // VAR_DECLARATION: TYPE VAR_DECLARATOR_LIST
+#line 209 "frontend/parser/yacc.y"
                              {
         yylhs.value.as < FE::AST::VarDeclaration* > () = new VarDeclaration(yystack_[1].value.as < FE::AST::Type* > (), yystack_[0].value.as < std::vector<FE::AST::VarDeclarator*>* > (), false, yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1218 "frontend/parser/yacc.cpp"
+#line 1200 "frontend/parser/yacc.cpp"
     break;
 
-  case 22: // VAR_DECLARATION: CONST TYPE VAR_DECLARATOR_LIST
-#line 220 "frontend/parser/yacc.y"
+  case 20: // VAR_DECLARATION: CONST TYPE VAR_DECLARATOR_LIST
+#line 212 "frontend/parser/yacc.y"
                                      {
         yylhs.value.as < FE::AST::VarDeclaration* > () = new VarDeclaration(yystack_[1].value.as < FE::AST::Type* > (), yystack_[0].value.as < std::vector<FE::AST::VarDeclarator*>* > (), true, yystack_[2].location.begin.line, yystack_[2].location.begin.column);
     }
-#line 1226 "frontend/parser/yacc.cpp"
+#line 1208 "frontend/parser/yacc.cpp"
     break;
 
-  case 23: // VAR_DECL_STMT: VAR_DECLARATION SEMICOLON
-#line 227 "frontend/parser/yacc.y"
+  case 21: // VAR_DECL_STMT: VAR_DECLARATION SEMICOLON
+#line 219 "frontend/parser/yacc.y"
                               {
         yylhs.value.as < FE::AST::StmtNode* > () = new VarDeclStmt(yystack_[1].value.as < FE::AST::VarDeclaration* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1234 "frontend/parser/yacc.cpp"
+#line 1216 "frontend/parser/yacc.cpp"
     break;
 
-  case 24: // FUNC_BODY: LBRACE RBRACE
-#line 233 "frontend/parser/yacc.y"
+  case 22: // FUNC_BODY: LBRACE RBRACE
+#line 225 "frontend/parser/yacc.y"
                   {
         yylhs.value.as < FE::AST::StmtNode* > () = nullptr;
     }
-#line 1242 "frontend/parser/yacc.cpp"
+#line 1224 "frontend/parser/yacc.cpp"
     break;
 
-  case 25: // FUNC_BODY: LBRACE STMT_LIST RBRACE
-#line 236 "frontend/parser/yacc.y"
+  case 23: // FUNC_BODY: LBRACE STMT_LIST RBRACE
+#line 228 "frontend/parser/yacc.y"
                               {
         if (!yystack_[1].value.as < std::vector<FE::AST::StmtNode*>* > () || yystack_[1].value.as < std::vector<FE::AST::StmtNode*>* > ()->empty())
         {
@@ -1256,86 +1238,86 @@ namespace  FE  {
         }
         else yylhs.value.as < FE::AST::StmtNode* > () = new BlockStmt(yystack_[1].value.as < std::vector<FE::AST::StmtNode*>* > (), yystack_[2].location.begin.line, yystack_[2].location.begin.column);
     }
-#line 1260 "frontend/parser/yacc.cpp"
+#line 1242 "frontend/parser/yacc.cpp"
     break;
 
-  case 26: // FUNC_DECL_STMT: TYPE IDENT LPAREN PARAM_DECLARATOR_LIST RPAREN FUNC_BODY
-#line 252 "frontend/parser/yacc.y"
+  case 24: // FUNC_DECL_STMT: TYPE IDENT LPAREN PARAM_DECLARATOR_LIST RPAREN FUNC_BODY
+#line 244 "frontend/parser/yacc.y"
                                                              {
         Entry* entry = Entry::getEntry(yystack_[4].value.as < std::string > ());
         yylhs.value.as < FE::AST::StmtNode* > () = new FuncDeclStmt(yystack_[5].value.as < FE::AST::Type* > (), entry, yystack_[2].value.as < std::vector<FE::AST::ParamDeclarator*>* > (), yystack_[0].value.as < FE::AST::StmtNode* > (), yystack_[5].location.begin.line, yystack_[5].location.begin.column);
     }
-#line 1269 "frontend/parser/yacc.cpp"
+#line 1251 "frontend/parser/yacc.cpp"
     break;
 
-  case 27: // FOR_STMT: FOR LPAREN VAR_DECLARATION SEMICOLON EXPR SEMICOLON EXPR RPAREN STMT
-#line 259 "frontend/parser/yacc.y"
+  case 25: // FOR_STMT: FOR LPAREN VAR_DECLARATION SEMICOLON EXPR SEMICOLON EXPR RPAREN STMT
+#line 251 "frontend/parser/yacc.y"
                                                                          {
         VarDeclStmt* initStmt = new VarDeclStmt(yystack_[6].value.as < FE::AST::VarDeclaration* > (), yystack_[6].location.begin.line, yystack_[6].location.begin.column);
         yylhs.value.as < FE::AST::StmtNode* > () = new ForStmt(initStmt, yystack_[4].value.as < FE::AST::ExprNode* > (), yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::StmtNode* > (), yystack_[8].location.begin.line, yystack_[8].location.begin.column);
     }
-#line 1278 "frontend/parser/yacc.cpp"
+#line 1260 "frontend/parser/yacc.cpp"
     break;
 
-  case 28: // FOR_STMT: FOR LPAREN EXPR SEMICOLON EXPR SEMICOLON EXPR RPAREN STMT
-#line 263 "frontend/parser/yacc.y"
+  case 26: // FOR_STMT: FOR LPAREN EXPR SEMICOLON EXPR SEMICOLON EXPR RPAREN STMT
+#line 255 "frontend/parser/yacc.y"
                                                                 {
         StmtNode* initStmt = new ExprStmt(yystack_[6].value.as < FE::AST::ExprNode* > (), yystack_[6].value.as < FE::AST::ExprNode* > ()->line_num, yystack_[6].value.as < FE::AST::ExprNode* > ()->col_num);
         yylhs.value.as < FE::AST::StmtNode* > () = new ForStmt(initStmt, yystack_[4].value.as < FE::AST::ExprNode* > (), yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::StmtNode* > (), yystack_[8].location.begin.line, yystack_[8].location.begin.column);
     }
-#line 1287 "frontend/parser/yacc.cpp"
+#line 1269 "frontend/parser/yacc.cpp"
     break;
 
-  case 29: // IF_STMT: IF LPAREN EXPR RPAREN STMT
-#line 271 "frontend/parser/yacc.y"
+  case 27: // IF_STMT: IF LPAREN EXPR RPAREN STMT
+#line 263 "frontend/parser/yacc.y"
                                            {
         yylhs.value.as < FE::AST::StmtNode* > () = new IfStmt(yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::StmtNode* > (), nullptr, yystack_[4].location.begin.line, yystack_[4].location.begin.column);
     }
-#line 1295 "frontend/parser/yacc.cpp"
+#line 1277 "frontend/parser/yacc.cpp"
     break;
 
-  case 30: // IF_STMT: IF LPAREN EXPR RPAREN STMT ELSE STMT
-#line 274 "frontend/parser/yacc.y"
+  case 28: // IF_STMT: IF LPAREN EXPR RPAREN STMT ELSE STMT
+#line 266 "frontend/parser/yacc.y"
                                            {
         yylhs.value.as < FE::AST::StmtNode* > () = new IfStmt(yystack_[4].value.as < FE::AST::ExprNode* > (), yystack_[2].value.as < FE::AST::StmtNode* > (), yystack_[0].value.as < FE::AST::StmtNode* > (), yystack_[6].location.begin.line, yystack_[6].location.begin.column);
     }
-#line 1303 "frontend/parser/yacc.cpp"
+#line 1285 "frontend/parser/yacc.cpp"
     break;
 
-  case 31: // RETURN_STMT: RETURN SEMICOLON
-#line 282 "frontend/parser/yacc.y"
+  case 29: // RETURN_STMT: RETURN SEMICOLON
+#line 274 "frontend/parser/yacc.y"
                      {
         yylhs.value.as < FE::AST::StmtNode* > () = new ReturnStmt(nullptr, yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1311 "frontend/parser/yacc.cpp"
+#line 1293 "frontend/parser/yacc.cpp"
     break;
 
-  case 32: // RETURN_STMT: RETURN EXPR SEMICOLON
-#line 285 "frontend/parser/yacc.y"
+  case 30: // RETURN_STMT: RETURN EXPR SEMICOLON
+#line 277 "frontend/parser/yacc.y"
                             {
         yylhs.value.as < FE::AST::StmtNode* > () = new ReturnStmt(yystack_[1].value.as < FE::AST::ExprNode* > (), yystack_[2].location.begin.line, yystack_[2].location.begin.column);
     }
-#line 1319 "frontend/parser/yacc.cpp"
+#line 1301 "frontend/parser/yacc.cpp"
     break;
 
-  case 33: // WHILE_STMT: WHILE LPAREN EXPR RPAREN STMT
-#line 291 "frontend/parser/yacc.y"
+  case 31: // WHILE_STMT: WHILE LPAREN EXPR RPAREN STMT
+#line 283 "frontend/parser/yacc.y"
                                   {
         yylhs.value.as < FE::AST::StmtNode* > () = new WhileStmt(yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::StmtNode* > (), yystack_[4].location.begin.line, yystack_[4].location.begin.column);
     }
-#line 1327 "frontend/parser/yacc.cpp"
+#line 1309 "frontend/parser/yacc.cpp"
     break;
 
-  case 34: // BLOCK_STMT: LBRACE RBRACE
-#line 297 "frontend/parser/yacc.y"
+  case 32: // BLOCK_STMT: LBRACE RBRACE
+#line 289 "frontend/parser/yacc.y"
                   {
         yylhs.value.as < FE::AST::StmtNode* > () = nullptr;
     }
-#line 1335 "frontend/parser/yacc.cpp"
+#line 1317 "frontend/parser/yacc.cpp"
     break;
 
-  case 35: // BLOCK_STMT: LBRACE STMT_LIST RBRACE
-#line 300 "frontend/parser/yacc.y"
+  case 33: // BLOCK_STMT: LBRACE STMT_LIST RBRACE
+#line 292 "frontend/parser/yacc.y"
                               {
         if (!yystack_[1].value.as < std::vector<FE::AST::StmtNode*>* > () || yystack_[1].value.as < std::vector<FE::AST::StmtNode*>* > ()->empty()) {
             yylhs.value.as < FE::AST::StmtNode* > () = nullptr;
@@ -1347,219 +1329,216 @@ namespace  FE  {
             yylhs.value.as < FE::AST::StmtNode* > () = new BlockStmt(yystack_[1].value.as < std::vector<FE::AST::StmtNode*>* > (), yystack_[2].location.begin.line, yystack_[2].location.begin.column);
         }
     }
-#line 1351 "frontend/parser/yacc.cpp"
+#line 1333 "frontend/parser/yacc.cpp"
     break;
 
-  case 36: // PARAM_DECLARATOR: TYPE IDENT
-#line 315 "frontend/parser/yacc.y"
+  case 34: // PARAM_DECLARATOR: TYPE IDENT
+#line 307 "frontend/parser/yacc.y"
                {
         Entry* entry = Entry::getEntry(yystack_[0].value.as < std::string > ());
         yylhs.value.as < FE::AST::ParamDeclarator* > () = new ParamDeclarator(yystack_[1].value.as < FE::AST::Type* > (), entry, nullptr, yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1360 "frontend/parser/yacc.cpp"
+#line 1342 "frontend/parser/yacc.cpp"
     break;
 
-  case 37: // PARAM_DECLARATOR: TYPE IDENT LBRACKET RBRACKET
-#line 319 "frontend/parser/yacc.y"
+  case 35: // PARAM_DECLARATOR: TYPE IDENT LBRACKET RBRACKET
+#line 311 "frontend/parser/yacc.y"
                                    {
         std::vector<ExprNode*>* dim = new std::vector<ExprNode*>();
         dim->emplace_back(new LiteralExpr(-1, yystack_[1].location.begin.line, yystack_[1].location.begin.column));
         Entry* entry = Entry::getEntry(yystack_[2].value.as < std::string > ());
         yylhs.value.as < FE::AST::ParamDeclarator* > () = new ParamDeclarator(yystack_[3].value.as < FE::AST::Type* > (), entry, dim, yystack_[3].location.begin.line, yystack_[3].location.begin.column);
     }
-#line 1371 "frontend/parser/yacc.cpp"
+#line 1353 "frontend/parser/yacc.cpp"
     break;
 
-  case 38: // PARAM_DECLARATOR: TYPE IDENT ARRAY_DIMENSION_EXPR_LIST
-#line 326 "frontend/parser/yacc.y"
+  case 36: // PARAM_DECLARATOR: TYPE IDENT ARRAY_DIMENSION_EXPR_LIST
+#line 318 "frontend/parser/yacc.y"
                                           {
         std::vector<ExprNode*>* dim = yystack_[0].value.as < std::vector<FE::AST::ExprNode*>* > ();
         Entry* entry = Entry::getEntry(yystack_[1].value.as < std::string > ());
         yylhs.value.as < FE::AST::ParamDeclarator* > () = new ParamDeclarator(yystack_[2].value.as < FE::AST::Type* > (), entry, dim, yystack_[2].location.begin.line, yystack_[2].location.begin.column);
     }
-#line 1381 "frontend/parser/yacc.cpp"
+#line 1363 "frontend/parser/yacc.cpp"
     break;
 
-  case 39: // PARAM_DECLARATOR: TYPE IDENT LBRACKET RBRACKET ARRAY_DIMENSION_EXPR_LIST
-#line 331 "frontend/parser/yacc.y"
+  case 37: // PARAM_DECLARATOR: TYPE IDENT LBRACKET RBRACKET ARRAY_DIMENSION_EXPR_LIST
+#line 323 "frontend/parser/yacc.y"
                                                             {
         std::vector<ExprNode*>* dim = yystack_[0].value.as < std::vector<FE::AST::ExprNode*>* > ();
         dim->insert(dim->begin(), new LiteralExpr(-1, yystack_[2].location.begin.line, yystack_[2].location.begin.column));
         Entry* entry = Entry::getEntry(yystack_[3].value.as < std::string > ());
         yylhs.value.as < FE::AST::ParamDeclarator* > () = new ParamDeclarator(yystack_[4].value.as < FE::AST::Type* > (), entry, dim, yystack_[4].location.begin.line, yystack_[4].location.begin.column);
     }
-#line 1392 "frontend/parser/yacc.cpp"
+#line 1374 "frontend/parser/yacc.cpp"
     break;
 
-  case 40: // PARAM_DECLARATOR_LIST: %empty
-#line 340 "frontend/parser/yacc.y"
+  case 38: // PARAM_DECLARATOR_LIST: %empty
+#line 332 "frontend/parser/yacc.y"
                 {
         yylhs.value.as < std::vector<FE::AST::ParamDeclarator*>* > () = new std::vector<ParamDeclarator*>();
     }
-#line 1400 "frontend/parser/yacc.cpp"
+#line 1382 "frontend/parser/yacc.cpp"
     break;
 
-  case 41: // PARAM_DECLARATOR_LIST: PARAM_DECLARATOR
-#line 344 "frontend/parser/yacc.y"
+  case 39: // PARAM_DECLARATOR_LIST: PARAM_DECLARATOR
+#line 336 "frontend/parser/yacc.y"
                        {
         yylhs.value.as < std::vector<FE::AST::ParamDeclarator*>* > () = new std::vector<ParamDeclarator*>();
         yylhs.value.as < std::vector<FE::AST::ParamDeclarator*>* > ()->push_back(yystack_[0].value.as < FE::AST::ParamDeclarator* > ());
     }
-#line 1409 "frontend/parser/yacc.cpp"
+#line 1391 "frontend/parser/yacc.cpp"
     break;
 
-  case 42: // PARAM_DECLARATOR_LIST: PARAM_DECLARATOR_LIST COMMA PARAM_DECLARATOR
-#line 348 "frontend/parser/yacc.y"
+  case 40: // PARAM_DECLARATOR_LIST: PARAM_DECLARATOR_LIST COMMA PARAM_DECLARATOR
+#line 340 "frontend/parser/yacc.y"
                                                    {
         yylhs.value.as < std::vector<FE::AST::ParamDeclarator*>* > () = yystack_[2].value.as < std::vector<FE::AST::ParamDeclarator*>* > ();
         yylhs.value.as < std::vector<FE::AST::ParamDeclarator*>* > ()->push_back(yystack_[0].value.as < FE::AST::ParamDeclarator* > ());
     }
-#line 1418 "frontend/parser/yacc.cpp"
+#line 1400 "frontend/parser/yacc.cpp"
     break;
 
-  case 43: // VAR_DECLARATOR: LEFT_VAL_EXPR
-#line 356 "frontend/parser/yacc.y"
+  case 41: // VAR_DECLARATOR: LEFT_VAL_EXPR
+#line 348 "frontend/parser/yacc.y"
                   {
         yylhs.value.as < FE::AST::VarDeclarator* > () = new VarDeclarator(yystack_[0].value.as < FE::AST::ExprNode* > (), nullptr, yystack_[0].location.begin.line, yystack_[0].location.begin.column);
     }
-#line 1426 "frontend/parser/yacc.cpp"
+#line 1408 "frontend/parser/yacc.cpp"
     break;
 
-  case 44: // VAR_DECLARATOR: LEFT_VAL_EXPR ASSIGN INITIALIZER
-#line 359 "frontend/parser/yacc.y"
+  case 42: // VAR_DECLARATOR: LEFT_VAL_EXPR ASSIGN INITIALIZER
+#line 351 "frontend/parser/yacc.y"
                                        {
         yylhs.value.as < FE::AST::VarDeclarator* > () = new VarDeclarator(yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::InitDecl* > (), yystack_[2].location.begin.line, yystack_[2].location.begin.column);
     }
-#line 1434 "frontend/parser/yacc.cpp"
+#line 1416 "frontend/parser/yacc.cpp"
     break;
 
-  case 45: // VAR_DECLARATOR: IDENT LBRACKET RBRACKET
-#line 362 "frontend/parser/yacc.y"
+  case 43: // VAR_DECLARATOR: IDENT LBRACKET RBRACKET
+#line 354 "frontend/parser/yacc.y"
                               {
-        ExprNode* lval = new LiteralExpr(yystack_[2].value.as < std::string > (), yystack_[2].location.begin.line, yystack_[2].location.begin.column);
+        Entry* entry = Entry::getEntry(yystack_[2].value.as < std::string > ());
         std::vector<ExprNode*>* dim = new std::vector<ExprNode*>();
         dim->emplace_back(new LiteralExpr(-1, yystack_[1].location.begin.line, yystack_[1].location.begin.column));
+        ExprNode* lval = new LeftValExpr(entry, dim, yystack_[2].location.begin.line, yystack_[2].location.begin.column);
         yylhs.value.as < FE::AST::VarDeclarator* > () = new VarDeclarator(lval, nullptr, yystack_[2].location.begin.line, yystack_[2].location.begin.column);
     }
-#line 1445 "frontend/parser/yacc.cpp"
+#line 1428 "frontend/parser/yacc.cpp"
     break;
 
-  case 46: // VAR_DECLARATOR: IDENT LBRACKET RBRACKET ARRAY_DIMENSION_EXPR_LIST
-#line 368 "frontend/parser/yacc.y"
+  case 44: // VAR_DECLARATOR: IDENT LBRACKET RBRACKET ARRAY_DIMENSION_EXPR_LIST
+#line 361 "frontend/parser/yacc.y"
                                                         {
-        ExprNode* lval = new LiteralExpr(yystack_[3].value.as < std::string > (), yystack_[3].location.begin.line, yystack_[3].location.begin.column);
-        std::vector<InitDecl*>* init_list = new std::vector<InitDecl*>();
-        for (ExprNode* expr : *yystack_[0].value.as < std::vector<FE::AST::ExprNode*>* > ()) {
-            init_list->push_back(new Initializer(expr, expr->line_num, expr->col_num));
-        }
-        InitDecl* init = new InitializerList(init_list, yystack_[0].location.begin.line, yystack_[0].location.begin.column);
-        yylhs.value.as < FE::AST::VarDeclarator* > () = new VarDeclarator(lval, init, yystack_[3].location.begin.line, yystack_[3].location.begin.column);
+        Entry* entry = Entry::getEntry(yystack_[3].value.as < std::string > ());
+        std::vector<ExprNode*>* dim = yystack_[0].value.as < std::vector<FE::AST::ExprNode*>* > ();
+        dim->emplace_back(new LiteralExpr(-1, yystack_[2].location.begin.line, yystack_[2].location.begin.column));
+        ExprNode* lval = new LeftValExpr(entry, dim, yystack_[3].location.begin.line, yystack_[3].location.begin.column);
+        yylhs.value.as < FE::AST::VarDeclarator* > () = new VarDeclarator(lval, nullptr, yystack_[3].location.begin.line, yystack_[3].location.begin.column);
     }
-#line 1459 "frontend/parser/yacc.cpp"
+#line 1440 "frontend/parser/yacc.cpp"
     break;
 
-  case 47: // VAR_DECLARATOR: IDENT LBRACKET RBRACKET ARRAY_DIMENSION_EXPR_LIST ASSIGN INITIALIZER
-#line 377 "frontend/parser/yacc.y"
+  case 45: // VAR_DECLARATOR: IDENT LBRACKET RBRACKET ARRAY_DIMENSION_EXPR_LIST ASSIGN INITIALIZER
+#line 368 "frontend/parser/yacc.y"
                                                                            {
-        ExprNode* lval = new LiteralExpr(yystack_[5].value.as < std::string > (), yystack_[5].location.begin.line, yystack_[5].location.begin.column);
-        std::vector<InitDecl*>* init_list = new std::vector<InitDecl*>();
-        for (ExprNode* expr : *yystack_[2].value.as < std::vector<FE::AST::ExprNode*>* > ()) {
-            init_list->push_back(new Initializer(expr, expr->line_num, expr->col_num));
-        }
-        InitDecl* init = new InitializerList(init_list, yystack_[2].location.begin.line, yystack_[2].location.begin.column);
-        yylhs.value.as < FE::AST::VarDeclarator* > () = new VarDeclarator(lval, init, yystack_[5].location.begin.line, yystack_[5].location.begin.column);
+        Entry* entry = Entry::getEntry(yystack_[5].value.as < std::string > ());
+        std::vector<ExprNode*>* dim = yystack_[2].value.as < std::vector<FE::AST::ExprNode*>* > ();
+        dim->emplace_back(new LiteralExpr(-1, yystack_[4].location.begin.line, yystack_[4].location.begin.column));
+        ExprNode* lval = new LeftValExpr(entry, dim, yystack_[5].location.begin.line, yystack_[5].location.begin.column);
+        yylhs.value.as < FE::AST::VarDeclarator* > () = new VarDeclarator(lval, yystack_[0].value.as < FE::AST::InitDecl* > (), yystack_[5].location.begin.line, yystack_[5].location.begin.column);
     }
-#line 1473 "frontend/parser/yacc.cpp"
+#line 1452 "frontend/parser/yacc.cpp"
     break;
 
-  case 48: // VAR_DECLARATOR_LIST: VAR_DECLARATOR
-#line 389 "frontend/parser/yacc.y"
+  case 46: // VAR_DECLARATOR_LIST: VAR_DECLARATOR
+#line 378 "frontend/parser/yacc.y"
                    {
         yylhs.value.as < std::vector<FE::AST::VarDeclarator*>* > () = new std::vector<VarDeclarator*>();
         yylhs.value.as < std::vector<FE::AST::VarDeclarator*>* > ()->push_back(yystack_[0].value.as < FE::AST::VarDeclarator* > ());
     }
-#line 1482 "frontend/parser/yacc.cpp"
+#line 1461 "frontend/parser/yacc.cpp"
     break;
 
-  case 49: // VAR_DECLARATOR_LIST: VAR_DECLARATOR_LIST COMMA VAR_DECLARATOR
-#line 393 "frontend/parser/yacc.y"
+  case 47: // VAR_DECLARATOR_LIST: VAR_DECLARATOR_LIST COMMA VAR_DECLARATOR
+#line 382 "frontend/parser/yacc.y"
                                                {
         yylhs.value.as < std::vector<FE::AST::VarDeclarator*>* > () = yystack_[2].value.as < std::vector<FE::AST::VarDeclarator*>* > ();
         yylhs.value.as < std::vector<FE::AST::VarDeclarator*>* > ()->push_back(yystack_[0].value.as < FE::AST::VarDeclarator* > ());
     }
-#line 1491 "frontend/parser/yacc.cpp"
+#line 1470 "frontend/parser/yacc.cpp"
     break;
 
-  case 50: // INITIALIZER: NOCOMMA_EXPR
-#line 401 "frontend/parser/yacc.y"
+  case 48: // INITIALIZER: NOCOMMA_EXPR
+#line 390 "frontend/parser/yacc.y"
                  {
         yylhs.value.as < FE::AST::InitDecl* > () = new Initializer(yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[0].location.begin.line, yystack_[0].location.begin.column);
     }
-#line 1499 "frontend/parser/yacc.cpp"
+#line 1478 "frontend/parser/yacc.cpp"
     break;
 
-  case 51: // INITIALIZER: LBRACE INITIALIZER_LIST RBRACE
-#line 404 "frontend/parser/yacc.y"
+  case 49: // INITIALIZER: LBRACE INITIALIZER_LIST RBRACE
+#line 393 "frontend/parser/yacc.y"
                                      {
         yylhs.value.as < FE::AST::InitDecl* > () = new InitializerList(yystack_[1].value.as < std::vector<FE::AST::InitDecl*>* > (), yystack_[2].location.begin.line, yystack_[2].location.begin.column);
     }
-#line 1507 "frontend/parser/yacc.cpp"
+#line 1486 "frontend/parser/yacc.cpp"
     break;
 
-  case 52: // INITIALIZER_LIST: INITIALIZER
-#line 409 "frontend/parser/yacc.y"
+  case 50: // INITIALIZER_LIST: INITIALIZER
+#line 398 "frontend/parser/yacc.y"
                 {
         yylhs.value.as < std::vector<FE::AST::InitDecl*>* > () = new std::vector<InitDecl*>();
         yylhs.value.as < std::vector<FE::AST::InitDecl*>* > ()->push_back(yystack_[0].value.as < FE::AST::InitDecl* > ());
     }
-#line 1516 "frontend/parser/yacc.cpp"
+#line 1495 "frontend/parser/yacc.cpp"
     break;
 
-  case 53: // INITIALIZER_LIST: INITIALIZER_LIST COMMA INITIALIZER
-#line 413 "frontend/parser/yacc.y"
+  case 51: // INITIALIZER_LIST: INITIALIZER_LIST COMMA INITIALIZER
+#line 402 "frontend/parser/yacc.y"
                                          {
         yylhs.value.as < std::vector<FE::AST::InitDecl*>* > () = yystack_[2].value.as < std::vector<FE::AST::InitDecl*>* > ();
         yylhs.value.as < std::vector<FE::AST::InitDecl*>* > ()->push_back(yystack_[0].value.as < FE::AST::InitDecl* > ());
     }
-#line 1525 "frontend/parser/yacc.cpp"
+#line 1504 "frontend/parser/yacc.cpp"
     break;
 
-  case 54: // ASSIGN_EXPR: LEFT_VAL_EXPR ASSIGN EXPR
-#line 421 "frontend/parser/yacc.y"
+  case 52: // ASSIGN_EXPR: LEFT_VAL_EXPR ASSIGN EXPR
+#line 410 "frontend/parser/yacc.y"
                               {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::ASSIGN, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1533 "frontend/parser/yacc.cpp"
+#line 1512 "frontend/parser/yacc.cpp"
     break;
 
-  case 55: // EXPR_LIST: NOCOMMA_EXPR
-#line 427 "frontend/parser/yacc.y"
+  case 53: // EXPR_LIST: NOCOMMA_EXPR
+#line 416 "frontend/parser/yacc.y"
                  {
         yylhs.value.as < std::vector<FE::AST::ExprNode*>* > () = new std::vector<ExprNode*>();
         yylhs.value.as < std::vector<FE::AST::ExprNode*>* > ()->push_back(yystack_[0].value.as < FE::AST::ExprNode* > ());
     }
-#line 1542 "frontend/parser/yacc.cpp"
+#line 1521 "frontend/parser/yacc.cpp"
     break;
 
-  case 56: // EXPR_LIST: EXPR_LIST COMMA NOCOMMA_EXPR
-#line 431 "frontend/parser/yacc.y"
+  case 54: // EXPR_LIST: EXPR_LIST COMMA NOCOMMA_EXPR
+#line 420 "frontend/parser/yacc.y"
                                    {
         yylhs.value.as < std::vector<FE::AST::ExprNode*>* > () = yystack_[2].value.as < std::vector<FE::AST::ExprNode*>* > ();
         yylhs.value.as < std::vector<FE::AST::ExprNode*>* > ()->push_back(yystack_[0].value.as < FE::AST::ExprNode* > ());
     }
-#line 1551 "frontend/parser/yacc.cpp"
+#line 1530 "frontend/parser/yacc.cpp"
     break;
 
-  case 57: // EXPR: NOCOMMA_EXPR
-#line 438 "frontend/parser/yacc.y"
+  case 55: // EXPR: NOCOMMA_EXPR
+#line 427 "frontend/parser/yacc.y"
                  {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1559 "frontend/parser/yacc.cpp"
+#line 1538 "frontend/parser/yacc.cpp"
     break;
 
-  case 58: // EXPR: EXPR COMMA NOCOMMA_EXPR
-#line 441 "frontend/parser/yacc.y"
+  case 56: // EXPR: EXPR COMMA NOCOMMA_EXPR
+#line 430 "frontend/parser/yacc.y"
                               {
         if (yystack_[2].value.as < FE::AST::ExprNode* > ()->isCommaExpr()) {
             CommaExpr* ce = static_cast<CommaExpr*>(yystack_[2].value.as < FE::AST::ExprNode* > ());
@@ -1572,227 +1551,227 @@ namespace  FE  {
             yylhs.value.as < FE::AST::ExprNode* > () = new CommaExpr(vec, yystack_[2].value.as < FE::AST::ExprNode* > ()->line_num, yystack_[2].value.as < FE::AST::ExprNode* > ()->col_num);
         }
     }
-#line 1576 "frontend/parser/yacc.cpp"
+#line 1555 "frontend/parser/yacc.cpp"
     break;
 
-  case 59: // NOCOMMA_EXPR: LOGICAL_OR_EXPR
-#line 456 "frontend/parser/yacc.y"
+  case 57: // NOCOMMA_EXPR: LOGICAL_OR_EXPR
+#line 445 "frontend/parser/yacc.y"
                     {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1584 "frontend/parser/yacc.cpp"
+#line 1563 "frontend/parser/yacc.cpp"
     break;
 
-  case 60: // NOCOMMA_EXPR: ASSIGN_EXPR
-#line 459 "frontend/parser/yacc.y"
+  case 58: // NOCOMMA_EXPR: ASSIGN_EXPR
+#line 448 "frontend/parser/yacc.y"
                   {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1592 "frontend/parser/yacc.cpp"
+#line 1571 "frontend/parser/yacc.cpp"
     break;
 
-  case 61: // LOGICAL_OR_EXPR: LOGICAL_AND_EXPR
-#line 466 "frontend/parser/yacc.y"
+  case 59: // LOGICAL_OR_EXPR: LOGICAL_AND_EXPR
+#line 455 "frontend/parser/yacc.y"
                      {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1600 "frontend/parser/yacc.cpp"
+#line 1579 "frontend/parser/yacc.cpp"
     break;
 
-  case 62: // LOGICAL_OR_EXPR: LOGICAL_OR_EXPR OR LOGICAL_AND_EXPR
-#line 469 "frontend/parser/yacc.y"
+  case 60: // LOGICAL_OR_EXPR: LOGICAL_OR_EXPR OR LOGICAL_AND_EXPR
+#line 458 "frontend/parser/yacc.y"
                                           {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::OR, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1608 "frontend/parser/yacc.cpp"
+#line 1587 "frontend/parser/yacc.cpp"
     break;
 
-  case 63: // LOGICAL_AND_EXPR: EQUALITY_EXPR
-#line 475 "frontend/parser/yacc.y"
+  case 61: // LOGICAL_AND_EXPR: EQUALITY_EXPR
+#line 464 "frontend/parser/yacc.y"
                   {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1616 "frontend/parser/yacc.cpp"
+#line 1595 "frontend/parser/yacc.cpp"
     break;
 
-  case 64: // LOGICAL_AND_EXPR: LOGICAL_AND_EXPR AND EQUALITY_EXPR
-#line 478 "frontend/parser/yacc.y"
+  case 62: // LOGICAL_AND_EXPR: LOGICAL_AND_EXPR AND EQUALITY_EXPR
+#line 467 "frontend/parser/yacc.y"
                                          {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::AND, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1624 "frontend/parser/yacc.cpp"
+#line 1603 "frontend/parser/yacc.cpp"
     break;
 
-  case 65: // EQUALITY_EXPR: RELATIONAL_EXPR
-#line 484 "frontend/parser/yacc.y"
+  case 63: // EQUALITY_EXPR: RELATIONAL_EXPR
+#line 473 "frontend/parser/yacc.y"
                     {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1632 "frontend/parser/yacc.cpp"
+#line 1611 "frontend/parser/yacc.cpp"
     break;
 
-  case 66: // EQUALITY_EXPR: EQUALITY_EXPR EQ RELATIONAL_EXPR
-#line 487 "frontend/parser/yacc.y"
+  case 64: // EQUALITY_EXPR: EQUALITY_EXPR EQ RELATIONAL_EXPR
+#line 476 "frontend/parser/yacc.y"
                                        {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::EQ, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1640 "frontend/parser/yacc.cpp"
+#line 1619 "frontend/parser/yacc.cpp"
     break;
 
-  case 67: // EQUALITY_EXPR: EQUALITY_EXPR NE RELATIONAL_EXPR
-#line 490 "frontend/parser/yacc.y"
+  case 65: // EQUALITY_EXPR: EQUALITY_EXPR NE RELATIONAL_EXPR
+#line 479 "frontend/parser/yacc.y"
                                        {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::NEQ, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1648 "frontend/parser/yacc.cpp"
+#line 1627 "frontend/parser/yacc.cpp"
     break;
 
-  case 68: // RELATIONAL_EXPR: ADDSUB_EXPR
-#line 496 "frontend/parser/yacc.y"
+  case 66: // RELATIONAL_EXPR: ADDSUB_EXPR
+#line 485 "frontend/parser/yacc.y"
                 {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1656 "frontend/parser/yacc.cpp"
+#line 1635 "frontend/parser/yacc.cpp"
     break;
 
-  case 69: // RELATIONAL_EXPR: RELATIONAL_EXPR LT ADDSUB_EXPR
-#line 499 "frontend/parser/yacc.y"
+  case 67: // RELATIONAL_EXPR: RELATIONAL_EXPR LT ADDSUB_EXPR
+#line 488 "frontend/parser/yacc.y"
                                      {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::LT, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1664 "frontend/parser/yacc.cpp"
+#line 1643 "frontend/parser/yacc.cpp"
     break;
 
-  case 70: // RELATIONAL_EXPR: RELATIONAL_EXPR LE ADDSUB_EXPR
-#line 502 "frontend/parser/yacc.y"
+  case 68: // RELATIONAL_EXPR: RELATIONAL_EXPR LE ADDSUB_EXPR
+#line 491 "frontend/parser/yacc.y"
                                      {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::LE, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1672 "frontend/parser/yacc.cpp"
+#line 1651 "frontend/parser/yacc.cpp"
     break;
 
-  case 71: // RELATIONAL_EXPR: RELATIONAL_EXPR GT ADDSUB_EXPR
-#line 505 "frontend/parser/yacc.y"
+  case 69: // RELATIONAL_EXPR: RELATIONAL_EXPR GT ADDSUB_EXPR
+#line 494 "frontend/parser/yacc.y"
                                      {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::GT, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1680 "frontend/parser/yacc.cpp"
+#line 1659 "frontend/parser/yacc.cpp"
     break;
 
-  case 72: // RELATIONAL_EXPR: RELATIONAL_EXPR GE ADDSUB_EXPR
-#line 508 "frontend/parser/yacc.y"
+  case 70: // RELATIONAL_EXPR: RELATIONAL_EXPR GE ADDSUB_EXPR
+#line 497 "frontend/parser/yacc.y"
                                      {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::GE, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1688 "frontend/parser/yacc.cpp"
+#line 1667 "frontend/parser/yacc.cpp"
     break;
 
-  case 73: // ADDSUB_EXPR: MULDIV_EXPR
-#line 514 "frontend/parser/yacc.y"
+  case 71: // ADDSUB_EXPR: MULDIV_EXPR
+#line 503 "frontend/parser/yacc.y"
                 {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1696 "frontend/parser/yacc.cpp"
+#line 1675 "frontend/parser/yacc.cpp"
     break;
 
-  case 74: // ADDSUB_EXPR: ADDSUB_EXPR PLUS MULDIV_EXPR
-#line 517 "frontend/parser/yacc.y"
+  case 72: // ADDSUB_EXPR: ADDSUB_EXPR PLUS MULDIV_EXPR
+#line 506 "frontend/parser/yacc.y"
                                    {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::ADD, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1704 "frontend/parser/yacc.cpp"
+#line 1683 "frontend/parser/yacc.cpp"
     break;
 
-  case 75: // ADDSUB_EXPR: ADDSUB_EXPR MINUS MULDIV_EXPR
-#line 520 "frontend/parser/yacc.y"
+  case 73: // ADDSUB_EXPR: ADDSUB_EXPR MINUS MULDIV_EXPR
+#line 509 "frontend/parser/yacc.y"
                                     {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::SUB, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1712 "frontend/parser/yacc.cpp"
+#line 1691 "frontend/parser/yacc.cpp"
     break;
 
-  case 76: // MULDIV_EXPR: UNARY_EXPR
-#line 526 "frontend/parser/yacc.y"
+  case 74: // MULDIV_EXPR: UNARY_EXPR
+#line 515 "frontend/parser/yacc.y"
                {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1720 "frontend/parser/yacc.cpp"
+#line 1699 "frontend/parser/yacc.cpp"
     break;
 
-  case 77: // MULDIV_EXPR: MULDIV_EXPR STAR UNARY_EXPR
-#line 529 "frontend/parser/yacc.y"
+  case 75: // MULDIV_EXPR: MULDIV_EXPR STAR UNARY_EXPR
+#line 518 "frontend/parser/yacc.y"
                                   {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::MUL, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1728 "frontend/parser/yacc.cpp"
+#line 1707 "frontend/parser/yacc.cpp"
     break;
 
-  case 78: // MULDIV_EXPR: MULDIV_EXPR SLASH UNARY_EXPR
-#line 532 "frontend/parser/yacc.y"
+  case 76: // MULDIV_EXPR: MULDIV_EXPR SLASH UNARY_EXPR
+#line 521 "frontend/parser/yacc.y"
                                    {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::DIV, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1736 "frontend/parser/yacc.cpp"
+#line 1715 "frontend/parser/yacc.cpp"
     break;
 
-  case 79: // MULDIV_EXPR: MULDIV_EXPR MOD UNARY_EXPR
-#line 535 "frontend/parser/yacc.y"
+  case 77: // MULDIV_EXPR: MULDIV_EXPR MOD UNARY_EXPR
+#line 524 "frontend/parser/yacc.y"
                                  {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::MOD, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1744 "frontend/parser/yacc.cpp"
+#line 1723 "frontend/parser/yacc.cpp"
     break;
 
-  case 80: // UNARY_EXPR: BASIC_EXPR
-#line 540 "frontend/parser/yacc.y"
+  case 78: // UNARY_EXPR: BASIC_EXPR
+#line 529 "frontend/parser/yacc.y"
                {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1752 "frontend/parser/yacc.cpp"
+#line 1731 "frontend/parser/yacc.cpp"
     break;
 
-  case 81: // UNARY_EXPR: UNARY_OP UNARY_EXPR
-#line 543 "frontend/parser/yacc.y"
+  case 79: // UNARY_EXPR: UNARY_OP UNARY_EXPR
+#line 532 "frontend/parser/yacc.y"
                           {
         yylhs.value.as < FE::AST::ExprNode* > () = new UnaryExpr(yystack_[1].value.as < FE::AST::Operator > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > ()->line_num, yystack_[0].value.as < FE::AST::ExprNode* > ()->col_num);
     }
-#line 1760 "frontend/parser/yacc.cpp"
+#line 1739 "frontend/parser/yacc.cpp"
     break;
 
-  case 82: // BASIC_EXPR: LITERAL_EXPR
-#line 549 "frontend/parser/yacc.y"
+  case 80: // BASIC_EXPR: LITERAL_EXPR
+#line 538 "frontend/parser/yacc.y"
                  {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1768 "frontend/parser/yacc.cpp"
+#line 1747 "frontend/parser/yacc.cpp"
     break;
 
-  case 83: // BASIC_EXPR: LEFT_VAL_EXPR
-#line 552 "frontend/parser/yacc.y"
+  case 81: // BASIC_EXPR: LEFT_VAL_EXPR
+#line 541 "frontend/parser/yacc.y"
                     {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1776 "frontend/parser/yacc.cpp"
+#line 1755 "frontend/parser/yacc.cpp"
     break;
 
-  case 84: // BASIC_EXPR: LPAREN EXPR RPAREN
-#line 555 "frontend/parser/yacc.y"
+  case 82: // BASIC_EXPR: LPAREN EXPR RPAREN
+#line 544 "frontend/parser/yacc.y"
                          {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[1].value.as < FE::AST::ExprNode* > ();
     }
-#line 1784 "frontend/parser/yacc.cpp"
+#line 1763 "frontend/parser/yacc.cpp"
     break;
 
-  case 85: // BASIC_EXPR: FUNC_CALL_EXPR
-#line 558 "frontend/parser/yacc.y"
+  case 83: // BASIC_EXPR: FUNC_CALL_EXPR
+#line 547 "frontend/parser/yacc.y"
                      {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1792 "frontend/parser/yacc.cpp"
+#line 1771 "frontend/parser/yacc.cpp"
     break;
 
-  case 86: // FUNC_CALL_EXPR: IDENT LPAREN RPAREN
-#line 564 "frontend/parser/yacc.y"
+  case 84: // FUNC_CALL_EXPR: IDENT LPAREN RPAREN
+#line 553 "frontend/parser/yacc.y"
                         {
         std::string funcName = yystack_[2].value.as < std::string > ();
         if (funcName != "starttime" && funcName != "stoptime")
@@ -1808,144 +1787,144 @@ namespace  FE  {
             yylhs.value.as < FE::AST::ExprNode* > () = new CallExpr(Entry::getEntry(funcName), args, yystack_[2].location.begin.line, yystack_[2].location.begin.column);
         }
     }
-#line 1812 "frontend/parser/yacc.cpp"
+#line 1791 "frontend/parser/yacc.cpp"
     break;
 
-  case 87: // FUNC_CALL_EXPR: IDENT LPAREN EXPR_LIST RPAREN
-#line 579 "frontend/parser/yacc.y"
+  case 85: // FUNC_CALL_EXPR: IDENT LPAREN EXPR_LIST RPAREN
+#line 568 "frontend/parser/yacc.y"
                                     {
         Entry* entry = Entry::getEntry(yystack_[3].value.as < std::string > ());
         yylhs.value.as < FE::AST::ExprNode* > () = new CallExpr(entry, yystack_[1].value.as < std::vector<FE::AST::ExprNode*>* > (), yystack_[3].location.begin.line, yystack_[3].location.begin.column);
     }
-#line 1821 "frontend/parser/yacc.cpp"
+#line 1800 "frontend/parser/yacc.cpp"
     break;
 
-  case 88: // ARRAY_DIMENSION_EXPR_LIST: LBRACKET NOCOMMA_EXPR RBRACKET
-#line 587 "frontend/parser/yacc.y"
+  case 86: // ARRAY_DIMENSION_EXPR_LIST: LBRACKET NOCOMMA_EXPR RBRACKET
+#line 576 "frontend/parser/yacc.y"
                                    {
         yylhs.value.as < std::vector<FE::AST::ExprNode*>* > () = new std::vector<ExprNode*>();
         yylhs.value.as < std::vector<FE::AST::ExprNode*>* > ()->push_back(yystack_[1].value.as < FE::AST::ExprNode* > ());
     }
-#line 1830 "frontend/parser/yacc.cpp"
+#line 1809 "frontend/parser/yacc.cpp"
     break;
 
-  case 89: // ARRAY_DIMENSION_EXPR_LIST: ARRAY_DIMENSION_EXPR_LIST LBRACKET NOCOMMA_EXPR RBRACKET
-#line 591 "frontend/parser/yacc.y"
+  case 87: // ARRAY_DIMENSION_EXPR_LIST: ARRAY_DIMENSION_EXPR_LIST LBRACKET NOCOMMA_EXPR RBRACKET
+#line 580 "frontend/parser/yacc.y"
                                                                {
         yylhs.value.as < std::vector<FE::AST::ExprNode*>* > () = yystack_[3].value.as < std::vector<FE::AST::ExprNode*>* > ();
         yylhs.value.as < std::vector<FE::AST::ExprNode*>* > ()->push_back(yystack_[1].value.as < FE::AST::ExprNode* > ());
     }
-#line 1839 "frontend/parser/yacc.cpp"
+#line 1818 "frontend/parser/yacc.cpp"
     break;
 
-  case 90: // LEFT_VAL_EXPR: IDENT
-#line 598 "frontend/parser/yacc.y"
+  case 88: // LEFT_VAL_EXPR: IDENT
+#line 587 "frontend/parser/yacc.y"
           {
         Entry* entry = Entry::getEntry(yystack_[0].value.as < std::string > ());
         yylhs.value.as < FE::AST::ExprNode* > () = new LeftValExpr(entry, nullptr, yystack_[0].location.begin.line, yystack_[0].location.begin.column);
     }
-#line 1848 "frontend/parser/yacc.cpp"
+#line 1827 "frontend/parser/yacc.cpp"
     break;
 
-  case 91: // LEFT_VAL_EXPR: IDENT ARRAY_DIMENSION_EXPR_LIST
-#line 602 "frontend/parser/yacc.y"
+  case 89: // LEFT_VAL_EXPR: IDENT ARRAY_DIMENSION_EXPR_LIST
+#line 591 "frontend/parser/yacc.y"
                                       {
         Entry* entry = Entry::getEntry(yystack_[1].value.as < std::string > ());
         yylhs.value.as < FE::AST::ExprNode* > () = new LeftValExpr(entry, yystack_[0].value.as < std::vector<FE::AST::ExprNode*>* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1857 "frontend/parser/yacc.cpp"
+#line 1836 "frontend/parser/yacc.cpp"
     break;
 
-  case 92: // LITERAL_EXPR: INT_CONST
-#line 609 "frontend/parser/yacc.y"
+  case 90: // LITERAL_EXPR: INT_CONST
+#line 598 "frontend/parser/yacc.y"
               {
         yylhs.value.as < FE::AST::ExprNode* > () = new LiteralExpr(yystack_[0].value.as < int > (), yystack_[0].location.begin.line, yystack_[0].location.begin.column);
     }
-#line 1865 "frontend/parser/yacc.cpp"
+#line 1844 "frontend/parser/yacc.cpp"
     break;
 
-  case 93: // LITERAL_EXPR: FLOAT_CONST
-#line 612 "frontend/parser/yacc.y"
+  case 91: // LITERAL_EXPR: FLOAT_CONST
+#line 601 "frontend/parser/yacc.y"
                   {
         yylhs.value.as < FE::AST::ExprNode* > () = new LiteralExpr(yystack_[0].value.as < float > (), yystack_[0].location.begin.line, yystack_[0].location.begin.column);
     }
-#line 1873 "frontend/parser/yacc.cpp"
+#line 1852 "frontend/parser/yacc.cpp"
     break;
 
-  case 94: // LITERAL_EXPR: LL_CONST
-#line 616 "frontend/parser/yacc.y"
+  case 92: // LITERAL_EXPR: LL_CONST
+#line 605 "frontend/parser/yacc.y"
                {
         yylhs.value.as < FE::AST::ExprNode* > () = new LiteralExpr(yystack_[0].value.as < long long > (), yystack_[0].location.begin.line, yystack_[0].location.begin.column);
     }
-#line 1881 "frontend/parser/yacc.cpp"
+#line 1860 "frontend/parser/yacc.cpp"
     break;
 
-  case 95: // LITERAL_EXPR: STR_CONST
-#line 619 "frontend/parser/yacc.y"
+  case 93: // LITERAL_EXPR: STR_CONST
+#line 608 "frontend/parser/yacc.y"
                 {
         yylhs.value.as < FE::AST::ExprNode* > () = new LiteralExpr(yystack_[0].value.as < std::string > (), yystack_[0].location.begin.line, yystack_[0].location.begin.column);
     }
-#line 1889 "frontend/parser/yacc.cpp"
+#line 1868 "frontend/parser/yacc.cpp"
     break;
 
-  case 96: // TYPE: INT
-#line 627 "frontend/parser/yacc.y"
+  case 94: // TYPE: INT
+#line 616 "frontend/parser/yacc.y"
         {
         yylhs.value.as < FE::AST::Type* > () = TypeFactory::getBasicType(Type_t::INT);
     }
-#line 1897 "frontend/parser/yacc.cpp"
+#line 1876 "frontend/parser/yacc.cpp"
     break;
 
-  case 97: // TYPE: FLOAT
-#line 630 "frontend/parser/yacc.y"
+  case 95: // TYPE: FLOAT
+#line 619 "frontend/parser/yacc.y"
             {
         yylhs.value.as < FE::AST::Type* > () = TypeFactory::getBasicType(Type_t::FLOAT);
     }
-#line 1905 "frontend/parser/yacc.cpp"
+#line 1884 "frontend/parser/yacc.cpp"
     break;
 
-  case 98: // TYPE: VOID
-#line 633 "frontend/parser/yacc.y"
+  case 96: // TYPE: VOID
+#line 622 "frontend/parser/yacc.y"
            {
         yylhs.value.as < FE::AST::Type* > () = TypeFactory::getBasicType(Type_t::VOID);
     }
-#line 1913 "frontend/parser/yacc.cpp"
+#line 1892 "frontend/parser/yacc.cpp"
     break;
 
-  case 99: // UNARY_OP: PLUS
-#line 640 "frontend/parser/yacc.y"
+  case 97: // UNARY_OP: PLUS
+#line 629 "frontend/parser/yacc.y"
          {
         yylhs.value.as < FE::AST::Operator > () = Operator::ADD;
     }
-#line 1921 "frontend/parser/yacc.cpp"
+#line 1900 "frontend/parser/yacc.cpp"
     break;
 
-  case 100: // UNARY_OP: MINUS
-#line 643 "frontend/parser/yacc.y"
+  case 98: // UNARY_OP: MINUS
+#line 632 "frontend/parser/yacc.y"
             {
         yylhs.value.as < FE::AST::Operator > () = Operator::SUB;
     }
-#line 1929 "frontend/parser/yacc.cpp"
+#line 1908 "frontend/parser/yacc.cpp"
     break;
 
-  case 101: // UNARY_OP: NOT
-#line 646 "frontend/parser/yacc.y"
+  case 99: // UNARY_OP: NOT
+#line 635 "frontend/parser/yacc.y"
           {
         yylhs.value.as < FE::AST::Operator > () = Operator::NOT;
     }
-#line 1937 "frontend/parser/yacc.cpp"
+#line 1916 "frontend/parser/yacc.cpp"
     break;
 
-  case 102: // BREAK_STMT: BREAK SEMICOLON
-#line 652 "frontend/parser/yacc.y"
+  case 100: // BREAK_STMT: BREAK SEMICOLON
+#line 641 "frontend/parser/yacc.y"
                     {
         yylhs.value.as < FE::AST::StmtNode* > () = new BreakStmt(yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1945 "frontend/parser/yacc.cpp"
+#line 1924 "frontend/parser/yacc.cpp"
     break;
 
 
-#line 1949 "frontend/parser/yacc.cpp"
+#line 1928 "frontend/parser/yacc.cpp"
 
             default:
               break;
@@ -2297,238 +2276,227 @@ namespace  FE  {
   }
 
 
-  const signed char  YaccParser ::yypact_ninf_ = -122;
+  const short  YaccParser ::yypact_ninf_ = -137;
 
   const signed char  YaccParser ::yytable_ninf_ = -1;
 
   const short
    YaccParser ::yypact_[] =
   {
-     353,  -122,  -122,  -122,  -122,  -122,  -122,  -122,  -122,  -122,
-    -122,  -122,  -122,   -14,   -41,   -29,    16,   -34,    43,    84,
-      -9,  -122,   436,   165,     2,   353,  -122,  -122,  -122,    53,
-    -122,  -122,  -122,  -122,  -122,  -122,  -122,  -122,   -31,  -122,
-      52,     5,     9,    42,   115,    46,  -122,  -122,  -122,   104,
-    -122,    92,   436,  -122,   386,   436,    81,   436,   408,   436,
-    -122,  -122,  -122,   102,    96,    33,  -122,   212,  -122,  -122,
-    -122,  -122,  -122,   436,   436,   436,   436,   436,   436,   436,
-     436,   436,   436,   436,   436,   436,   436,   436,    35,  -122,
-      91,   139,  -122,  -122,  -122,    41,  -122,   120,   436,    48,
-     130,   105,    96,    49,  -122,   135,    91,  -122,  -122,  -122,
-       5,     9,    42,    42,   115,   115,   115,   115,    46,    46,
-    -122,  -122,  -122,  -122,    -9,    30,    96,    20,   436,  -122,
-    -122,   132,   353,   436,   436,   353,  -122,    60,   155,   140,
-    -122,    20,  -122,  -122,  -122,  -122,   154,   123,   133,  -122,
-      -9,   144,   141,     4,  -122,   -36,   353,   436,   436,  -122,
-     259,  -122,    94,    81,    20,    20,  -122,  -122,    61,    79,
-    -122,   306,   140,  -122,  -122,   353,   353,  -122,    81,  -122,
-    -122
+      29,  -137,  -137,  -137,  -137,  -137,  -137,  -137,  -137,  -137,
+    -137,   -33,   -25,    12,    16,   -32,    -7,   388,    -5,  -137,
+     398,   164,     2,    29,  -137,  -137,  -137,    23,  -137,  -137,
+    -137,  -137,  -137,  -137,  -137,  -137,     7,  -137,    51,    55,
+      86,     4,    88,    10,  -137,  -137,  -137,    71,  -137,    53,
+     398,  -137,   351,   398,    46,   398,   382,   398,  -137,  -137,
+    -137,    81,    87,    -9,  -137,   213,  -137,  -137,  -137,  -137,
+    -137,   398,   398,   398,   398,   398,   398,   398,   398,   398,
+     398,   398,   398,   398,   398,   398,    22,  -137,    66,   112,
+    -137,  -137,  -137,    31,  -137,    75,   398,    48,    83,    89,
+      87,    56,  -137,    90,    66,  -137,  -137,  -137,    55,    86,
+       4,     4,    88,    88,    88,    88,    10,    10,  -137,  -137,
+    -137,  -137,    -5,   318,    87,    82,   398,  -137,  -137,   122,
+      29,   398,   398,    29,  -137,    57,   110,   101,  -137,    82,
+    -137,  -137,  -137,  -137,   139,    92,   100,  -137,    -5,   123,
+     126,    -3,  -137,   -37,    29,   398,   398,  -137,   248,  -137,
+     334,    46,    82,    82,  -137,  -137,    67,    76,  -137,   283,
+     101,  -137,  -137,    29,    29,  -137,    46,  -137,  -137
   };
 
   const signed char
    YaccParser ::yydefact_[] =
   {
-       0,    92,    93,    94,    95,    17,    18,    99,   100,   101,
-      96,    97,    98,    90,     0,     0,     0,     0,     0,     0,
-       0,    12,     0,     0,     0,     2,     4,    11,     6,     0,
-       7,     8,     9,    10,    13,    14,    15,    60,     0,    57,
-      59,    61,    63,    65,    68,    73,    76,    80,    85,    83,
-      82,     0,     0,    16,     0,     0,    91,     0,     0,     0,
-      19,   102,    31,     0,     0,     0,    34,     0,     1,     3,
-       5,    23,    20,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,    90,    48,
-      21,    43,    81,    83,    86,     0,    55,     0,     0,     0,
-       0,     0,     0,     0,    32,    90,    22,    84,    35,    58,
-      62,    64,    67,    66,    70,    72,    69,    71,    74,    75,
-      77,    78,    79,    54,    40,     0,     0,     0,     0,    87,
-      88,     0,     0,     0,     0,     0,    41,     0,     0,    45,
-      49,     0,    44,    50,    56,    89,    29,     0,     0,    33,
-       0,     0,    36,    46,    52,     0,     0,     0,     0,    42,
-       0,    26,     0,    38,     0,     0,    51,    30,     0,     0,
-      24,     0,    37,    47,    53,     0,     0,    25,    39,    27,
-      28
+       0,    90,    91,    92,    93,    97,    98,    99,    94,    95,
+      96,    88,     0,     0,     0,     0,     0,     0,     0,    12,
+       0,     0,     0,     2,     4,    11,     6,     0,     7,     8,
+       9,    10,    13,    14,    15,    58,     0,    55,    57,    59,
+      61,    63,    66,    71,    74,    78,    83,    81,    80,     0,
+       0,    16,     0,     0,    89,     0,     0,     0,    17,   100,
+      29,     0,     0,     0,    32,     0,     1,     3,     5,    21,
+      18,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,     0,    88,    46,    19,    41,
+      79,    81,    84,     0,    53,     0,     0,     0,     0,     0,
+       0,     0,    30,    88,    20,    82,    33,    56,    60,    62,
+      65,    64,    68,    70,    67,    69,    72,    73,    75,    76,
+      77,    52,    38,     0,     0,     0,     0,    85,    86,     0,
+       0,     0,     0,     0,    39,     0,     0,    43,    47,     0,
+      42,    48,    54,    87,    27,     0,     0,    31,     0,     0,
+      34,    44,    50,     0,     0,     0,     0,    40,     0,    24,
+       0,    36,     0,     0,    49,    28,     0,     0,    22,     0,
+      35,    45,    51,     0,     0,    23,    37,    25,    26
   };
 
   const short
    YaccParser ::yypgoto_[] =
   {
-    -122,  -122,   -17,   -25,  -122,  -122,   138,  -122,  -122,  -122,
-    -122,  -122,  -122,  -122,  -122,    38,  -122,    75,   146,  -119,
-    -122,  -122,  -122,   -18,   -45,  -122,   128,   136,   101,    -8,
-      54,   -23,  -122,  -122,  -121,    78,  -122,   -15,  -122,  -122
+    -137,  -137,   -15,   -23,  -137,  -137,   119,  -137,  -137,  -137,
+    -137,  -137,  -137,  -137,  -137,    28,  -137,    54,   115,  -136,
+    -137,  -137,  -137,   -16,   -43,  -137,   107,   111,    73,    13,
+      85,   -34,  -137,  -137,  -126,    80,  -137,   -13,  -137,  -137
   };
 
   const unsigned char
    YaccParser ::yydefgoto_[] =
   {
-       0,    24,    25,    26,    27,    28,    29,    30,   161,    31,
-      32,    33,    34,    35,    36,   136,   137,    89,    90,   142,
-     155,    37,    95,    38,    39,    40,    41,    42,    43,    44,
-      45,    46,    47,    48,    56,    49,    50,    51,    52,    53
+       0,    22,    23,    24,    25,    26,    27,    28,   159,    29,
+      30,    31,    32,    33,    34,   134,   135,    87,    88,   140,
+     153,    35,    93,    36,    37,    38,    39,    40,    41,    42,
+      43,    44,    45,    46,    54,    47,    48,    49,    50,    51
   };
 
   const unsigned char
    YaccParser ::yytable_[] =
   {
-      70,    63,    68,    57,    65,    64,    67,   165,    60,    96,
-      97,    72,    73,   166,   164,    58,    10,    11,   153,    12,
-      76,    77,   154,     1,     2,     3,     4,    75,   109,    92,
-      54,   163,    55,     1,     2,     3,     4,     7,     8,    99,
-     101,   103,    70,   102,     9,   173,   174,     7,     8,    13,
-      98,   178,    69,   131,     9,    78,    79,    80,    81,    13,
-      59,   120,   121,   122,    22,    84,    85,    86,   141,   123,
-     114,   115,   116,   117,    22,    74,    73,   139,   107,   124,
-      97,   125,   143,   144,   128,    61,   129,     1,     2,     3,
-       4,    73,    73,   132,   135,    71,   143,     1,     2,     3,
-       4,     7,     8,   150,    73,   151,   175,   146,     9,   138,
-     149,     7,     8,    13,    87,   147,   148,    97,     9,   143,
-     143,    88,    73,    13,   176,   105,    62,    98,    22,    91,
-      93,   167,    82,    83,   126,   138,   118,   119,    22,   168,
-     169,   172,    91,   171,   104,    73,    70,   134,    73,   127,
-     179,   180,    93,    93,    93,    93,    93,    93,    93,    93,
-      93,    93,    93,    93,    93,   157,    73,   130,     1,     2,
-       3,     4,   133,     5,     6,   158,    73,   112,   113,   145,
-      91,   125,     7,     8,   152,   156,    55,   162,   159,     9,
-      10,    11,   160,    12,    13,    14,   100,    15,    16,    17,
-      18,   140,   110,     0,    91,    19,    20,    21,     0,    22,
-     106,   111,     0,    23,    66,     1,     2,     3,     4,     0,
-       5,     6,     0,     0,     0,     0,     0,     0,     0,     7,
-       8,     0,     0,     0,     0,     0,     9,    10,    11,     0,
-      12,    13,    14,     0,    15,    16,    17,    18,     0,     0,
-       0,     0,    19,    20,    21,     0,    22,     0,     0,     0,
-      23,   108,     1,     2,     3,     4,     0,     5,     6,     0,
-       0,     0,     0,     0,     0,     0,     7,     8,     0,     0,
-       0,     0,     0,     9,    10,    11,     0,    12,    13,    14,
-       0,    15,    16,    17,    18,     0,     0,     0,     0,    19,
-      20,    21,     0,    22,     0,     0,     0,    23,   170,     1,
-       2,     3,     4,     0,     5,     6,     0,     0,     0,     0,
-       0,     0,     0,     7,     8,     0,     0,     0,     0,     0,
-       9,    10,    11,     0,    12,    13,    14,     0,    15,    16,
-      17,    18,     0,     0,     0,     0,    19,    20,    21,     0,
-      22,     0,     0,     0,    23,   177,     1,     2,     3,     4,
-       0,     5,     6,     0,     0,     0,     0,     0,     0,     0,
-       7,     8,     0,     0,     0,     0,     0,     9,    10,    11,
-       0,    12,    13,    14,     0,    15,    16,    17,    18,     1,
-       2,     3,     4,    19,    20,    21,     0,    22,     0,     0,
-       0,    23,     0,     7,     8,     0,     0,     0,     0,     0,
-       9,     1,     2,     3,     4,    13,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     7,     8,     0,     0,     0,
-      22,    94,     9,    10,    11,     0,    12,    13,     0,     1,
-       2,     3,     4,     0,     0,     0,     0,     0,     0,    20,
-       0,     0,    22,     7,     8,     0,     0,     0,     0,     0,
-       9,     0,     0,     0,     0,    13,     0,     0,     0,     0,
+      68,    61,    66,   152,    63,    62,    65,   162,   163,    94,
+      95,   151,    58,    52,   164,    53,    90,    76,    77,    78,
+      79,    55,     8,     9,   161,    10,   171,   172,   107,    82,
+      83,    84,     1,     2,     3,     4,    71,    59,   105,    97,
+      99,   101,    68,   100,   176,    96,     5,     6,   118,   119,
+     120,    70,    71,   129,    67,     7,     8,     9,    56,    10,
+      11,    12,    57,    13,    14,    15,    16,    69,   122,   121,
+     123,    17,    18,    19,    72,    20,   126,    73,   127,    21,
+      95,    85,   141,   142,    86,     1,     2,     3,     4,   112,
+     113,   114,   115,    71,    96,   130,   141,    74,    75,     5,
+       6,    71,   148,   133,   149,    80,    81,   144,     7,   136,
+     147,   124,    71,    11,   173,   145,   146,    95,   103,   141,
+     141,    71,   125,   174,   128,   102,    71,   131,    20,    89,
+      91,   165,   139,   132,    71,   136,   155,    71,   123,   166,
+     167,   150,    89,   169,   156,    71,    68,   110,   111,    53,
+     177,   178,    91,    91,    91,    91,    91,    91,    91,    91,
+      91,    91,    91,    91,    91,   116,   117,     1,     2,     3,
+       4,   143,   154,   158,   160,    98,   157,   104,   138,   108,
+      89,     5,     6,     0,   109,     0,     0,     0,     0,     0,
+       7,     8,     9,     0,    10,    11,    12,     0,    13,    14,
+      15,    16,     0,     0,    89,     0,    17,    18,    19,     0,
+      20,     0,     0,     0,    21,    64,     1,     2,     3,     4,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-      22
+       5,     6,     0,     0,     0,     0,     0,     0,     0,     7,
+       8,     9,     0,    10,    11,    12,     0,    13,    14,    15,
+      16,     1,     2,     3,     4,    17,    18,    19,     0,    20,
+       0,     0,     0,    21,   106,     5,     6,     0,     0,     0,
+       0,     0,     0,     0,     7,     8,     9,     0,    10,    11,
+      12,     0,    13,    14,    15,    16,     1,     2,     3,     4,
+      17,    18,    19,     0,    20,     0,     0,     0,    21,   168,
+       5,     6,     0,     0,     0,     0,     0,     0,     0,     7,
+       8,     9,     0,    10,    11,    12,     0,    13,    14,    15,
+      16,     1,     2,     3,     4,    17,    18,    19,     0,    20,
+       0,     0,     0,    21,   175,     5,     6,     1,     2,     3,
+       4,     0,     0,     0,     7,     0,     0,     0,     0,    11,
+       0,     5,     6,     0,     1,     2,     3,     4,     0,     0,
+       7,     0,     0,     0,    20,    11,     0,   137,     5,     6,
+       0,     0,     0,     0,     0,     0,     0,     7,     0,     0,
+      20,     0,    11,   170,     0,     1,     2,     3,     4,     0,
+       0,     1,     2,     3,     4,     0,     0,    20,    92,     5,
+       6,     1,     2,     3,     4,     5,     6,     0,     7,     8,
+       9,     0,    10,    11,     7,     5,     6,     0,     0,    11,
+       0,     0,     0,     0,     7,    18,     0,     0,    20,    11,
+       0,     0,    60,     0,    20,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,    20
   };
 
   const short
    YaccParser ::yycheck_[] =
   {
-      25,    19,     0,    44,    22,    20,    23,    43,    42,    54,
-      55,    42,    43,    49,    10,    44,    25,    26,   139,    28,
-      11,    12,   141,     3,     4,     5,     6,    22,    73,    52,
-      44,   152,    46,     3,     4,     5,     6,    17,    18,    57,
-      58,    59,    67,    58,    24,   164,   165,    17,    18,    29,
-      46,   172,    50,    98,    24,    13,    14,    15,    16,    29,
-      44,    84,    85,    86,    44,    19,    20,    21,    48,    87,
-      78,    79,    80,    81,    44,    23,    43,    47,    45,    44,
-     125,    46,   127,   128,    43,    42,    45,     3,     4,     5,
-       6,    43,    43,    45,    45,    42,   141,     3,     4,     5,
-       6,    17,    18,    43,    43,    45,    45,   132,    24,   124,
-     135,    17,    18,    29,    10,   133,   134,   162,    24,   164,
-     165,    29,    43,    29,    45,    29,    42,    46,    44,    51,
-      52,   156,    17,    18,    43,   150,    82,    83,    44,   157,
-     158,    47,    64,   160,    42,    43,   171,    42,    43,    10,
-     175,   176,    74,    75,    76,    77,    78,    79,    80,    81,
-      82,    83,    84,    85,    86,    42,    43,    47,     3,     4,
-       5,     6,    42,     8,     9,    42,    43,    76,    77,    47,
-     102,    46,    17,    18,    29,    31,    46,    46,   150,    24,
-      25,    26,    48,    28,    29,    30,    58,    32,    33,    34,
-      35,   126,    74,    -1,   126,    40,    41,    42,    -1,    44,
-      64,    75,    -1,    48,    49,     3,     4,     5,     6,    -1,
-       8,     9,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    17,
-      18,    -1,    -1,    -1,    -1,    -1,    24,    25,    26,    -1,
-      28,    29,    30,    -1,    32,    33,    34,    35,    -1,    -1,
-      -1,    -1,    40,    41,    42,    -1,    44,    -1,    -1,    -1,
-      48,    49,     3,     4,     5,     6,    -1,     8,     9,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    17,    18,    -1,    -1,
-      -1,    -1,    -1,    24,    25,    26,    -1,    28,    29,    30,
-      -1,    32,    33,    34,    35,    -1,    -1,    -1,    -1,    40,
-      41,    42,    -1,    44,    -1,    -1,    -1,    48,    49,     3,
-       4,     5,     6,    -1,     8,     9,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    17,    18,    -1,    -1,    -1,    -1,    -1,
-      24,    25,    26,    -1,    28,    29,    30,    -1,    32,    33,
-      34,    35,    -1,    -1,    -1,    -1,    40,    41,    42,    -1,
-      44,    -1,    -1,    -1,    48,    49,     3,     4,     5,     6,
-      -1,     8,     9,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      17,    18,    -1,    -1,    -1,    -1,    -1,    24,    25,    26,
-      -1,    28,    29,    30,    -1,    32,    33,    34,    35,     3,
-       4,     5,     6,    40,    41,    42,    -1,    44,    -1,    -1,
-      -1,    48,    -1,    17,    18,    -1,    -1,    -1,    -1,    -1,
-      24,     3,     4,     5,     6,    29,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    17,    18,    -1,    -1,    -1,
-      44,    45,    24,    25,    26,    -1,    28,    29,    -1,     3,
-       4,     5,     6,    -1,    -1,    -1,    -1,    -1,    -1,    41,
-      -1,    -1,    44,    17,    18,    -1,    -1,    -1,    -1,    -1,
-      24,    -1,    -1,    -1,    -1,    29,    -1,    -1,    -1,    -1,
+      23,    17,     0,   139,    20,    18,    21,    10,    45,    52,
+      53,   137,    44,    46,    51,    48,    50,    13,    14,    15,
+      16,    46,    27,    28,   150,    30,   162,   163,    71,    19,
+      20,    21,     3,     4,     5,     6,    45,    44,    47,    55,
+      56,    57,    65,    56,   170,    48,    17,    18,    82,    83,
+      84,    44,    45,    96,    52,    26,    27,    28,    46,    30,
+      31,    32,    46,    34,    35,    36,    37,    44,    46,    85,
+      48,    42,    43,    44,    23,    46,    45,    22,    47,    50,
+     123,    10,   125,   126,    31,     3,     4,     5,     6,    76,
+      77,    78,    79,    45,    48,    47,   139,    11,    12,    17,
+      18,    45,    45,    47,    47,    17,    18,   130,    26,   122,
+     133,    45,    45,    31,    47,   131,   132,   160,    31,   162,
+     163,    45,    10,    47,    49,    44,    45,    44,    46,    49,
+      50,   154,    50,    44,    45,   148,    44,    45,    48,   155,
+     156,    31,    62,   158,    44,    45,   169,    74,    75,    48,
+     173,   174,    72,    73,    74,    75,    76,    77,    78,    79,
+      80,    81,    82,    83,    84,    80,    81,     3,     4,     5,
+       6,    49,    33,    50,    48,    56,   148,    62,   124,    72,
+     100,    17,    18,    -1,    73,    -1,    -1,    -1,    -1,    -1,
+      26,    27,    28,    -1,    30,    31,    32,    -1,    34,    35,
+      36,    37,    -1,    -1,   124,    -1,    42,    43,    44,    -1,
+      46,    -1,    -1,    -1,    50,    51,     3,     4,     5,     6,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      44
+      17,    18,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    26,
+      27,    28,    -1,    30,    31,    32,    -1,    34,    35,    36,
+      37,     3,     4,     5,     6,    42,    43,    44,    -1,    46,
+      -1,    -1,    -1,    50,    51,    17,    18,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    26,    27,    28,    -1,    30,    31,
+      32,    -1,    34,    35,    36,    37,     3,     4,     5,     6,
+      42,    43,    44,    -1,    46,    -1,    -1,    -1,    50,    51,
+      17,    18,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    26,
+      27,    28,    -1,    30,    31,    32,    -1,    34,    35,    36,
+      37,     3,     4,     5,     6,    42,    43,    44,    -1,    46,
+      -1,    -1,    -1,    50,    51,    17,    18,     3,     4,     5,
+       6,    -1,    -1,    -1,    26,    -1,    -1,    -1,    -1,    31,
+      -1,    17,    18,    -1,     3,     4,     5,     6,    -1,    -1,
+      26,    -1,    -1,    -1,    46,    31,    -1,    49,    17,    18,
+      -1,    -1,    -1,    -1,    -1,    -1,    -1,    26,    -1,    -1,
+      46,    -1,    31,    49,    -1,     3,     4,     5,     6,    -1,
+      -1,     3,     4,     5,     6,    -1,    -1,    46,    47,    17,
+      18,     3,     4,     5,     6,    17,    18,    -1,    26,    27,
+      28,    -1,    30,    31,    26,    17,    18,    -1,    -1,    31,
+      -1,    -1,    -1,    -1,    26,    43,    -1,    -1,    46,    31,
+      -1,    -1,    44,    -1,    46,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    -1,    46
   };
 
   const signed char
    YaccParser ::yystos_[] =
   {
-       0,     3,     4,     5,     6,     8,     9,    17,    18,    24,
-      25,    26,    28,    29,    30,    32,    33,    34,    35,    40,
-      41,    42,    44,    48,    53,    54,    55,    56,    57,    58,
-      59,    61,    62,    63,    64,    65,    66,    73,    75,    76,
-      77,    78,    79,    80,    81,    82,    83,    84,    85,    87,
-      88,    89,    90,    91,    44,    46,    86,    44,    44,    44,
-      42,    42,    42,    75,    89,    75,    49,    54,     0,    50,
-      55,    42,    42,    43,    23,    22,    11,    12,    13,    14,
-      15,    16,    17,    18,    19,    20,    21,    10,    29,    69,
-      70,    87,    83,    87,    45,    74,    76,    76,    46,    75,
-      58,    75,    89,    75,    42,    29,    70,    45,    49,    76,
-      78,    79,    80,    80,    81,    81,    81,    81,    82,    82,
-      83,    83,    83,    75,    44,    46,    43,    10,    43,    45,
-      47,    76,    45,    42,    42,    45,    67,    68,    89,    47,
-      69,    48,    71,    76,    76,    47,    55,    75,    75,    55,
-      43,    45,    29,    86,    71,    72,    31,    42,    42,    67,
-      48,    60,    46,    86,    10,    43,    49,    55,    75,    75,
-      49,    54,    47,    71,    71,    45,    45,    49,    86,    55,
-      55
+       0,     3,     4,     5,     6,    17,    18,    26,    27,    28,
+      30,    31,    32,    34,    35,    36,    37,    42,    43,    44,
+      46,    50,    55,    56,    57,    58,    59,    60,    61,    63,
+      64,    65,    66,    67,    68,    75,    77,    78,    79,    80,
+      81,    82,    83,    84,    85,    86,    87,    89,    90,    91,
+      92,    93,    46,    48,    88,    46,    46,    46,    44,    44,
+      44,    77,    91,    77,    51,    56,     0,    52,    57,    44,
+      44,    45,    23,    22,    11,    12,    13,    14,    15,    16,
+      17,    18,    19,    20,    21,    10,    31,    71,    72,    89,
+      85,    89,    47,    76,    78,    78,    48,    77,    60,    77,
+      91,    77,    44,    31,    72,    47,    51,    78,    80,    81,
+      82,    82,    83,    83,    83,    83,    84,    84,    85,    85,
+      85,    77,    46,    48,    45,    10,    45,    47,    49,    78,
+      47,    44,    44,    47,    69,    70,    91,    49,    71,    50,
+      73,    78,    78,    49,    57,    77,    77,    57,    45,    47,
+      31,    88,    73,    74,    33,    44,    44,    69,    50,    62,
+      48,    88,    10,    45,    51,    57,    77,    77,    51,    56,
+      49,    73,    73,    47,    47,    51,    88,    57,    57
   };
 
   const signed char
    YaccParser ::yyr1_[] =
   {
-       0,    52,    53,    53,    54,    54,    55,    55,    55,    55,
-      55,    55,    55,    55,    55,    55,    55,    55,    55,    56,
-      57,    58,    58,    59,    60,    60,    61,    62,    62,    63,
-      63,    64,    64,    65,    66,    66,    67,    67,    67,    67,
-      68,    68,    68,    69,    69,    69,    69,    69,    70,    70,
-      71,    71,    72,    72,    73,    74,    74,    75,    75,    76,
-      76,    77,    77,    78,    78,    79,    79,    79,    80,    80,
-      80,    80,    80,    81,    81,    81,    82,    82,    82,    82,
-      83,    83,    84,    84,    84,    84,    85,    85,    86,    86,
-      87,    87,    88,    88,    88,    88,    89,    89,    89,    90,
-      90,    90,    91
+       0,    54,    55,    55,    56,    56,    57,    57,    57,    57,
+      57,    57,    57,    57,    57,    57,    57,    58,    59,    60,
+      60,    61,    62,    62,    63,    64,    64,    65,    65,    66,
+      66,    67,    68,    68,    69,    69,    69,    69,    70,    70,
+      70,    71,    71,    71,    71,    71,    72,    72,    73,    73,
+      74,    74,    75,    76,    76,    77,    77,    78,    78,    79,
+      79,    80,    80,    81,    81,    81,    82,    82,    82,    82,
+      82,    83,    83,    83,    84,    84,    84,    84,    85,    85,
+      86,    86,    86,    86,    87,    87,    88,    88,    89,    89,
+      90,    90,    90,    90,    91,    91,    91,    92,    92,    92,
+      93
   };
 
   const signed char
    YaccParser ::yyr2_[] =
   {
        0,     2,     1,     2,     1,     2,     1,     1,     1,     1,
-       1,     1,     1,     1,     1,     1,     1,     1,     1,     2,
-       2,     2,     3,     2,     2,     3,     6,     9,     9,     5,
-       7,     2,     3,     5,     2,     3,     2,     4,     3,     5,
-       0,     1,     3,     1,     3,     3,     4,     6,     1,     3,
-       1,     3,     1,     3,     3,     1,     3,     1,     3,     1,
-       1,     1,     3,     1,     3,     1,     3,     3,     1,     3,
-       3,     3,     3,     1,     3,     3,     1,     3,     3,     3,
-       1,     2,     1,     1,     3,     1,     3,     4,     3,     4,
-       1,     2,     1,     1,     1,     1,     1,     1,     1,     1,
-       1,     1,     2
+       1,     1,     1,     1,     1,     1,     1,     2,     2,     2,
+       3,     2,     2,     3,     6,     9,     9,     5,     7,     2,
+       3,     5,     2,     3,     2,     4,     3,     5,     0,     1,
+       3,     1,     3,     3,     4,     6,     1,     3,     1,     3,
+       1,     3,     3,     1,     3,     1,     3,     1,     1,     1,
+       3,     1,     3,     1,     3,     3,     1,     3,     3,     3,
+       3,     1,     3,     3,     1,     3,     3,     3,     1,     2,
+       1,     1,     3,     1,     3,     4,     3,     4,     1,     2,
+       1,     1,     1,     1,     1,     1,     1,     1,     1,     1,
+       2
   };
 
 
@@ -2541,12 +2509,12 @@ namespace  FE  {
   "\"end of file\"", "error", "\"invalid token\"", "INT_CONST",
   "FLOAT_CONST", "LL_CONST", "STR_CONST", "ERR_TOKEN", "SLASH_COMMENT",
   "MULTI_COMMENT", "ASSIGN", "NE", "EQ", "LE", "GE", "LT", "GT", "PLUS",
-  "MINUS", "STAR", "SLASH", "MOD", "AND", "OR", "NOT", "INT", "FLOAT",
-  "STRING", "VOID", "IDENT", "IF", "ELSE", "FOR", "WHILE", "CONTINUE",
-  "BREAK", "SWITCH", "CASE", "GOTO", "DO", "RETURN", "CONST", "SEMICOLON",
-  "COMMA", "LPAREN", "RPAREN", "LBRACKET", "RBRACKET", "LBRACE", "RBRACE",
-  "END", "THEN", "$accept", "PROGRAM", "STMT_LIST", "STMT",
-  "CONTINUE_STMT", "EXPR_STMT", "VAR_DECLARATION", "VAR_DECL_STMT",
+  "MINUS", "STAR", "SLASH", "MOD", "AND", "OR", "BITAND", "BITOR", "NOT",
+  "INT", "FLOAT", "STRING", "VOID", "IDENT", "IF", "ELSE", "FOR", "WHILE",
+  "CONTINUE", "BREAK", "SWITCH", "CASE", "GOTO", "DO", "RETURN", "CONST",
+  "SEMICOLON", "COMMA", "LPAREN", "RPAREN", "LBRACKET", "RBRACKET",
+  "LBRACE", "RBRACE", "END", "THEN", "$accept", "PROGRAM", "STMT_LIST",
+  "STMT", "CONTINUE_STMT", "EXPR_STMT", "VAR_DECLARATION", "VAR_DECL_STMT",
   "FUNC_BODY", "FUNC_DECL_STMT", "FOR_STMT", "IF_STMT", "RETURN_STMT",
   "WHILE_STMT", "BLOCK_STMT", "PARAM_DECLARATOR", "PARAM_DECLARATOR_LIST",
   "VAR_DECLARATOR", "VAR_DECLARATOR_LIST", "INITIALIZER",
@@ -2564,16 +2532,16 @@ namespace  FE  {
    YaccParser ::yyrline_[] =
   {
        0,   139,   139,   143,   149,   153,   161,   164,   167,   170,
-     173,   176,   179,   182,   185,   188,   191,   194,   198,   205,
-     211,   217,   220,   227,   233,   236,   252,   259,   263,   271,
-     274,   282,   285,   291,   297,   300,   315,   319,   326,   331,
-     340,   344,   348,   356,   359,   362,   368,   377,   389,   393,
-     401,   404,   409,   413,   421,   427,   431,   438,   441,   456,
-     459,   466,   469,   475,   478,   484,   487,   490,   496,   499,
-     502,   505,   508,   514,   517,   520,   526,   529,   532,   535,
-     540,   543,   549,   552,   555,   558,   564,   579,   587,   591,
-     598,   602,   609,   612,   616,   619,   627,   630,   633,   640,
-     643,   646,   652
+     173,   176,   179,   182,   185,   188,   191,   197,   203,   209,
+     212,   219,   225,   228,   244,   251,   255,   263,   266,   274,
+     277,   283,   289,   292,   307,   311,   318,   323,   332,   336,
+     340,   348,   351,   354,   361,   368,   378,   382,   390,   393,
+     398,   402,   410,   416,   420,   427,   430,   445,   448,   455,
+     458,   464,   467,   473,   476,   479,   485,   488,   491,   494,
+     497,   503,   506,   509,   515,   518,   521,   524,   529,   532,
+     538,   541,   544,   547,   553,   568,   576,   580,   587,   591,
+     598,   601,   605,   608,   616,   619,   622,   629,   632,   635,
+     641
   };
 
   void
@@ -2606,9 +2574,9 @@ namespace  FE  {
 
 #line 4 "frontend/parser/yacc.y"
 } //  FE 
-#line 2610 "frontend/parser/yacc.cpp"
+#line 2578 "frontend/parser/yacc.cpp"
 
-#line 657 "frontend/parser/yacc.y"
+#line 646 "frontend/parser/yacc.y"
 
 
 void FE::YaccParser::error(const FE::location& location, const std::string& message)

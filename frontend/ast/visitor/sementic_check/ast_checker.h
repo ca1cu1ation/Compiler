@@ -135,6 +135,8 @@ namespace FE::AST
         ExprValue typeInfer(const ExprValue& operand, Operator op, const Node& node, bool& hasError);
         // 对二元表达式，若 lhs 与 rhs 的 isConstexpr 都为 true，则返回的 Value 也为编译期常量
         ExprValue typeInfer(const ExprValue& lhs, const ExprValue& rhs, Operator op, const Node& node, bool& hasError);
+        // 检查混合初始化器的函数声明
+        bool checkArrayInitializer(InitializerList& initList, std::vector<VarValue>& elements, const std::vector<int>& arrayDims, size_t dimIndex, size_t& totalCount);
     };
 }  // namespace FE::AST
 

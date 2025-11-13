@@ -12,35 +12,91 @@ namespace FE::AST
             errors.push_back("Error: Variable " + node.entry->getName() + " not declared at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
             return false;
         }
-        // 检查是否对 const 变量进行赋值
-        if (varAttr->isConstDecl && varAttr->isInitialized)
-        {
-            errors.push_back("Error: Cannot assign to const variable " + node.entry->getName() + " at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
-            return false;
-        }
-
-        // 设置变量为已初始化
-        varAttr->isInitialized = true;
         
-        // 检查数组下标
-        if (node.indices)
+        bool res = true;
+
+        if (node.isDeclaration)
         {
-            for (auto& index : *node.indices)
+            // 数组声明：检查维度是否为编译期常量
+            if (node.indices)
             {
-                if (!apply(*this, *index))
-                    return false;
-                if (index->attr.val.value.type != intType)
+                for (auto& index : *node.indices)
                 {
-                    errors.push_back("Error: Array index must be of type int at line " + std::to_string(index->line_num) + ", column " + std::to_string(index->col_num) + ".");
-                    return false;
+                    if (!apply(*this, *index))
+                    {
+                        res = false;
+                        continue;
+                    }
+                    if (!index->attr.val.isConstexpr || index->attr.val.value.type != intType)
+                    {
+                        errors.push_back("Error: Array dimension must be a compile-time constant of type int at line " +
+                                        std::to_string(node.line_num) + ", column " +
+                                        std::to_string(node.col_num) + ".");
+                        res = false;
+                        continue;
+                    }
+                    int dimValue = index->attr.val.value.getInt();
+                    if (dimValue <= 0)
+                    {
+                        errors.push_back("Error: Array dimension must be greater than zero at line " +
+                                        std::to_string(node.line_num) + ", column " +
+                                        std::to_string(node.col_num) + ".");
+                        res = false;
+                        continue;
+                    }
+                    varAttr->arrayDims.push_back(dimValue);
+                }
+            }
+        }
+        else
+        {   
+            // 数组调用：检查下标是否为整数类型
+            if (node.indices)
+            {
+                if (node.indices->size() > varAttr->arrayDims.size())
+                {
+                    errors.push_back("Error: Array subscript count mismatch for variable " + node.entry->getName() + " "
+                                    + std::to_string(node.indices->size()) + " vs " + std::to_string(varAttr->arrayDims.size()) +
+                                    " at line " + std::to_string(node.line_num) + ", column " +
+                                    std::to_string(node.col_num) + ".");
+                    res = false;
+                }
+
+                for (size_t i = 0; i < node.indices->size(); ++i)
+                {
+                    auto& index = (*node.indices)[i];
+                    if (!apply(*this, *index))
+                    {
+                        res = false;
+                        continue;
+                    }
+                    if (index->attr.val.value.type != intType)
+                    {
+                        errors.push_back("Error: Array subscript must be of type int at line " +
+                                        std::to_string(node.line_num) + ", column " +
+                                        std::to_string(node.col_num) + ".");
+                        res = false;
+                        continue;
+                    }
+                    // 检查下标是否越界
+                    int subscript = index->attr.val.value.getInt();
+                    if (subscript < 0 || subscript >= varAttr->arrayDims[i])
+                    {
+                        errors.push_back("Error: Array subscript out of bounds at line " +
+                                        std::to_string(node.line_num) + ", column " +
+                                        std::to_string(node.col_num) + ".");
+                        res = false;
+                        continue;
+                    }
                 }
             }
         }
 
         // 设置表达式属性
+        node.attr.val.value = varAttr->initList.begin() != varAttr->initList.end() ? *(varAttr->initList.begin()) : VarValue();
         node.attr.val.value.type = varAttr->type;
         node.attr.val.isConstexpr = varAttr->isConstDecl;
-        return true;
+        return res;
     }
 
     bool ASTChecker::visit(LiteralExpr& node)
@@ -85,9 +141,50 @@ namespace FE::AST
         if (!apply(*this, *node.lhs) || !apply(*this, *node.rhs))
             return false;
 
+        // 检查操作数是否为 void 类型
+        if (node.lhs->attr.val.value.type == voidType || node.rhs->attr.val.value.type == voidType)
+        {
+            errors.push_back("Error: Operands of binary expression cannot be of type void at line " +
+                                std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
+            return false;
+        }
+        
+        // 检查赋值操作
+        if (node.op == Operator::ASSIGN)
+        {   
+            // 检查左操作数是否为左值
+            auto* leftValExpr = dynamic_cast<LeftValExpr*>(node.lhs);
+            if (!leftValExpr)
+            {
+                errors.push_back("Error: Left operand of assignment must be a left value at line " +
+                                std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
+                return false;
+            }
+
+            // 检查是否对 const 变量进行赋值
+            auto varAttr = symTable.getSymbol(leftValExpr->entry);            
+            if (varAttr->isConstDecl && varAttr->isInitialized)
+            {
+                errors.push_back("Error: Cannot assign to const variable " + leftValExpr->entry->getName() + " at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
+                return false;
+            }
+            varAttr->isInitialized = true;
+
+            // 检查类型兼容性
+            if (node.lhs->attr.val.value.type != node.rhs->attr.val.value.type)
+            {
+                // 如果需要，可以在这里添加隐式类型转换逻辑
+                errors.push_back("Error: Type mismatch in assignment at line " +
+                                std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
+                return false;
+            }
+
+            node.attr.val.isConstexpr = false;  // 赋值表达式不是编译期常量
+            return true;
+        }
         // 检查操作数类型并进行隐式类型转换
-        if (node.op == Operator::ADD || node.op == Operator::SUB ||
-            node.op == Operator::MUL || node.op == Operator::DIV)
+        else if (node.op == Operator::ADD || node.op == Operator::SUB ||
+            node.op == Operator::MUL || node.op == Operator::DIV || node.op == Operator::MOD)
         {
             if (node.lhs->attr.val.value.type == boolType)
             {
@@ -106,6 +203,58 @@ namespace FE::AST
                 errors.push_back("Error: Arithmetic operators require integer operands at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
                 return false;
             }
+            
+            // 常量折叠
+            if (node.lhs->attr.val.isConstexpr && node.rhs->attr.val.isConstexpr)
+            {
+                int lhsValue = node.lhs->attr.val.value.intValue;
+                int rhsValue = node.rhs->attr.val.value.intValue;
+                int result = 0;
+
+                switch (node.op)
+                {
+                case Operator::ADD:
+                    result = lhsValue + rhsValue;
+                    break;
+                case Operator::SUB:
+                    result = lhsValue - rhsValue;
+                    break;
+                case Operator::MUL:
+                    result = lhsValue * rhsValue;
+                    break;
+                case Operator::MOD:
+                    result = lhsValue % rhsValue;
+                    break;
+                case Operator::DIV:
+                    if (rhsValue == 0)
+                    {
+                        errors.push_back("Error: Division by zero at line " +
+                                        std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
+                        return false;
+                    }
+                    result = lhsValue / rhsValue;
+                    break;
+                default:
+                    break;
+                }
+
+                // 设置结果为编译期常量
+                node.attr.val.isConstexpr = true;
+                node.attr.val.value.intValue = result;
+            }
+            else
+            {
+                // 如果不是常量，设置为非编译期常量
+                node.attr.val.isConstexpr = false;
+            }
+
+            // 检查除法中的除数是否为 0
+            if (node.op == Operator::DIV && node.rhs->attr.val.isConstexpr && node.rhs->attr.val.value.intValue == 0)
+            {
+                errors.push_back("Error: Division by zero at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
+                return false;
+            }
+
         }
         else if (node.op == Operator::AND || node.op == Operator::OR)
         {
@@ -130,7 +279,6 @@ namespace FE::AST
 
         // 设置表达式属性
         node.attr.val.value.type = node.lhs->attr.val.value.type;
-        node.attr.val.isConstexpr = node.lhs->attr.val.isConstexpr && node.rhs->attr.val.isConstexpr;
         return true;
     }
 

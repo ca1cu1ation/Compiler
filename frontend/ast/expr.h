@@ -31,13 +31,14 @@ namespace FE::AST
     class LeftValExpr : public ExprNode
     {
       public:
+        bool isDeclaration;  // 标记是否为数组声明
         bool                    isLval;
         Entry*                  entry;
         std::vector<ExprNode*>* indices;
 
       public:
         LeftValExpr(Entry* entry, std::vector<ExprNode*>* indices = nullptr, int line_num = -1, int col_num = -1)
-            : ExprNode(line_num, col_num), entry(entry), indices(indices)
+            : ExprNode(line_num, col_num), isDeclaration(false), isLval(true), entry(entry), indices(indices)
         {}
         virtual ~LeftValExpr() override;
 

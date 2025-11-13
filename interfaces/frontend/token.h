@@ -33,6 +33,8 @@ namespace FE
             T_GT,
             T_AND,
             T_OR,
+            T_BITAND,
+            T_BITOR,
             T_NOT,
             T_IDENT,
             T_SLASH_COMMENT,    // 单行注释

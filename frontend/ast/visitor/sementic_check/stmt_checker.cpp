@@ -23,11 +23,9 @@ namespace FE::AST
             return false;
         }
 
-        // 将函数添加到函数声明表
-        VarAttr varAttr;
-        varAttr.type = node.retType;
-        varAttr.isConstDecl = false;
-        funcDecls[node.entry] = &node;
+        // 设置当前函数的返回类型
+        curFuncRetType = voidType;
+        funcHasReturn = false;
 
         // 检查形参
         if (node.params)
@@ -43,6 +41,22 @@ namespace FE::AST
         if (node.body && !apply(*this, *node.body))
             return false;
 
+        // 检查是否存在 return 语句
+        if (!funcHasReturn)
+        {
+            errors.push_back("Error: Function " + node.entry->getName() + " must have a return statement.");
+            return false;
+        }
+
+        // 检查返回类型是否匹配
+        if(curFuncRetType !=node.retType)
+        {
+            errors.push_back("Error: Function " + node.entry->getName() + " return type mismatch.");
+            return false;
+        }
+
+        // 将函数添加到函数声明表
+        funcDecls[node.entry] = &node;
         // 退出作用域
         symTable.exitScope();
         return true;
@@ -88,6 +102,7 @@ namespace FE::AST
 
         // 设置返回标记
         funcHasReturn = true;
+        curFuncRetType = node.retExpr ? node.retExpr->attr.val.value.type : voidType;
         return true;
     }
 
@@ -99,6 +114,14 @@ namespace FE::AST
         // 检查条件表达式
         if (!apply(*this, *node.cond))
             return false;
+        
+        // 检查条件表达式的返回值类型
+        if (node.cond->attr.val.value.type == voidType)
+        {
+            errors.push_back("Error: Condition expression cannot have void type at line " +
+                                std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
+            return false;
+        }
 
         // 管理循环深度
         loopDepth++;
@@ -118,6 +141,14 @@ namespace FE::AST
         // 检查条件表达式
         if (!apply(*this, *node.cond))
             return false;
+
+        // 检查条件表达式的返回值类型
+        if (node.cond->attr.val.value.type == voidType)
+        {
+            errors.push_back("Error: Condition expression cannot have void type at line " +
+                                std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
+            return false;
+        }
 
         // 检查 then 分支
         if (!apply(*this, *node.thenStmt))
@@ -170,6 +201,14 @@ namespace FE::AST
         // 检查条件表达式
         if (node.cond && !apply(*this, *node.cond))
             return false;
+        
+        // 检查条件表达式的返回值类型
+        if (node.cond->attr.val.value.type == voidType)
+        {
+            errors.push_back("Error: Condition expression cannot have void type at line " +
+                                std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
+            return false;
+        }
 
         // 检查步进表达式
         if (node.step && !apply(*this, *node.step))

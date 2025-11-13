@@ -65,7 +65,7 @@
 %token <float> FLOAT_CONST
 %token <long long> LL_CONST
 %token <std::string> STR_CONST ERR_TOKEN SLASH_COMMENT MULTI_COMMENT
-%token ASSIGN NE EQ LE GE LT GT PLUS MINUS STAR SLASH MOD AND OR NOT
+%token ASSIGN NE EQ LE GE LT GT PLUS MINUS STAR SLASH MOD AND OR BITAND BITOR NOT
 %token INT FLOAT STRING VOID
 %token <std::string> IDENT 
 
@@ -191,14 +191,6 @@ STMT:
     | BREAK_STMT {
         $$ = $1;
     }
-    | SLASH_COMMENT {
-        // 单行注释，不生成AST节点，直接忽略
-        $$ = nullptr;
-    }
-    | MULTI_COMMENT {
-        // 多行注释，不生成AST节点，直接忽略
-        $$ = nullptr;
-    }    
     ;
 
 CONTINUE_STMT:
@@ -360,28 +352,25 @@ VAR_DECLARATOR:
         $$ = new VarDeclarator($1, $3, @1.begin.line, @1.begin.column);
     }
     | IDENT LBRACKET RBRACKET {
-        ExprNode* lval = new LiteralExpr($1, @1.begin.line, @1.begin.column);
+        Entry* entry = Entry::getEntry($1);
         std::vector<ExprNode*>* dim = new std::vector<ExprNode*>();
         dim->emplace_back(new LiteralExpr(-1, @2.begin.line, @2.begin.column));
+        ExprNode* lval = new LeftValExpr(entry, dim, @1.begin.line, @1.begin.column);
         $$ = new VarDeclarator(lval, nullptr, @1.begin.line, @1.begin.column);
     }
     | IDENT LBRACKET RBRACKET ARRAY_DIMENSION_EXPR_LIST {
-        ExprNode* lval = new LiteralExpr($1, @1.begin.line, @1.begin.column);
-        std::vector<InitDecl*>* init_list = new std::vector<InitDecl*>();
-        for (ExprNode* expr : *$4) {
-            init_list->push_back(new Initializer(expr, expr->line_num, expr->col_num));
-        }
-        InitDecl* init = new InitializerList(init_list, @4.begin.line, @4.begin.column);
-        $$ = new VarDeclarator(lval, init, @1.begin.line, @1.begin.column);
+        Entry* entry = Entry::getEntry($1);
+        std::vector<ExprNode*>* dim = $4;
+        dim->emplace_back(new LiteralExpr(-1, @2.begin.line, @2.begin.column));
+        ExprNode* lval = new LeftValExpr(entry, dim, @1.begin.line, @1.begin.column);
+        $$ = new VarDeclarator(lval, nullptr, @1.begin.line, @1.begin.column);
     }
     | IDENT LBRACKET RBRACKET ARRAY_DIMENSION_EXPR_LIST ASSIGN INITIALIZER {
-        ExprNode* lval = new LiteralExpr($1, @1.begin.line, @1.begin.column);
-        std::vector<InitDecl*>* init_list = new std::vector<InitDecl*>();
-        for (ExprNode* expr : *$4) {
-            init_list->push_back(new Initializer(expr, expr->line_num, expr->col_num));
-        }
-        InitDecl* init = new InitializerList(init_list, @4.begin.line, @4.begin.column);
-        $$ = new VarDeclarator(lval, init, @1.begin.line, @1.begin.column);
+        Entry* entry = Entry::getEntry($1);
+        std::vector<ExprNode*>* dim = $4;
+        dim->emplace_back(new LiteralExpr(-1, @2.begin.line, @2.begin.column));
+        ExprNode* lval = new LeftValExpr(entry, dim, @1.begin.line, @1.begin.column);
+        $$ = new VarDeclarator(lval, $6, @1.begin.line, @1.begin.column);
     }
     ;
 

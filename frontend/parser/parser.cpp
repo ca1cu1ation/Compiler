@@ -78,6 +78,12 @@ namespace FE
                 case kind::S_OR:
                     result.type = Token::TokenType::T_OR;
                     break;
+                case kind::S_BITOR:
+                    result.type = Token::TokenType::T_BITOR;
+                    break;
+                case kind::S_BITAND:
+                    result.type = Token::TokenType::T_BITAND;
+                    break;
                 case kind::S_NOT:
                     result.type = Token::TokenType::T_NOT;
                     break;
