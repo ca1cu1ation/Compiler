@@ -84,28 +84,48 @@ namespace FE::AST
             auto* initList = dynamic_cast<InitializerList*>(node.init);
             if (initList)
                 {
-                    size_t totalCount = 0;
-                    std::vector<VarValue> elements;
-                    if (!checkArrayInitializer(*initList, elements, sym->arrayDims, 0, totalCount))
+                    size_t totalSize = 1;
+                    if(sym->arrayDims.empty())
+                    {
+                        errors.push_back("Error: Initializer list provided for non-array variable " + entry->getName() + " at line " +
+                                        std::to_string(node.init->line_num) + ", column " +
+                                        std::to_string(node.init->col_num) + ".");
+                        return false;
+                    }
+                    for (int dim : sym->arrayDims)
+                    {
+                        totalSize *= dim;
+                    }
+                    Type* elemType = sym->type;
+                    VarValue defaultValue;
+                    defaultValue.type = elemType;
+                    // 可根据类型设置默认值
+                    if (elemType->getBaseType() == Type_t::INT) defaultValue.intValue = 0;
+                    else if (elemType->getBaseType() == Type_t::FLOAT) defaultValue.floatValue = 0.0f;
+                    else if (elemType->getBaseType() == Type_t::BOOL) defaultValue.boolValue = false;
+                    std::vector<VarValue> elements(totalSize, defaultValue);
+                    if (!checkArrayInitializer(*initList, elemType, elements, sym->arrayDims, 0, 0))
                     {
                         errors.push_back("Error: Invalid initializer structure for array at line " +
                                         std::to_string(node.init->line_num) + ", column " +
                                         std::to_string(node.init->col_num) + ".");
                         res = false;
                     }
+                    sym->initList = elements;
                 }
             else
             {
                 // 非数组初始化器
                 // 检查类型匹配
-                if (node.attr.val.value.type != node.init->attr.val.value.type)
+                VarValue converted = convertType(node.init->attr.val.value, node.attr.val.value.type);
+                if (node.attr.val.value.type != converted.type)
                 {
                     errors.push_back("Error: Type mismatch in initializer " + node.attr.val.value.type->toString() + " vs " + node.init->attr.val.value.type->toString() + " at line " + std::to_string(node.init->line_num) + ", column " + std::to_string(node.init->col_num) + ".");
                     res = false;
                 }
 
                 // 将初始化器值写入符号表
-                sym->initList.push_back(node.init->attr.val.value);
+                sym->initList.push_back(converted);
                 res = true;
             }
         }
@@ -114,17 +134,42 @@ namespace FE::AST
     }
 
     bool ASTChecker::visit(ParamDeclarator& node)
-    {
+    {   
+        bool res = true;
         // 实现函数形参的语义检查
         if(!node.type){
             errors.push_back("Error: Null type in ParamDeclarator at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
-            return false;
+            res = false;
         }
 
         // 尝试将形参加入符号表                 
         VarAttr varAttr;
         varAttr.type = node.type;
         varAttr.isConstDecl = false; // 假设形参不是 const 声明
+        // 处理数组维度
+        if(node.dims != nullptr){
+            for (size_t i = 0; i < node.dims->size(); ++i)
+            {                        
+                // 访问维度表达式以确保其语义正确
+                if (!apply(*this, *(*node.dims)[i]))
+                {
+                    errors.push_back("Error: Invalid dimension expression in ParamDeclarator at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
+                    res = false;
+                }
+                // 形参数组维度应为整数常量
+                if ((*node.dims)[i]->attr.val.value.type != intType || !(*node.dims)[i]->attr.val.isConstexpr)
+                {
+                    errors.push_back("Error: Array dimension must be a constant integer in ParamDeclarator at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
+                    res = false;
+                }
+                if (i !=0 && (*node.dims)[i]->attr.val.value.getInt() <= 0){
+                    errors.push_back("Error: Array dimension must be positive in ParamDeclarator at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
+                    res = false;
+                }
+                varAttr.arrayDims.push_back((*node.dims)[i]->attr.val.value.getInt());
+            }
+        }
+
         try
         {
             symTable.addSymbol(node.entry, varAttr);
@@ -135,7 +180,7 @@ namespace FE::AST
             return false;
         }
 
-        return true;
+        return res;
     }
 
     bool ASTChecker::visit(VarDeclaration& node)
@@ -153,57 +198,6 @@ namespace FE::AST
 
             // 变量声明器语义检查
             res &= apply(*this, *decl);
-        }
-
-        return res;
-    }
-
-    bool ASTChecker::checkArrayInitializer(InitializerList& initList, std::vector<VarValue>& elements, const std::vector<int>& arrayDims, size_t dimIndex, size_t& totalCount)    
-    {
-        if (dimIndex >= arrayDims.size())
-        {
-            // 超过数组维度，报错
-            errors.push_back("Error: Too many initializers for array at dimension " + std::to_string(dimIndex) + ".");
-            return false;
-        }
-
-        size_t totalSize = 1;
-        for (int dim : arrayDims)
-        {
-            totalSize *= dim;
-        }
-
-        bool res = true;
-
-        for (auto* subInit : *(initList.init_list))
-        {
-            auto* subInitList = dynamic_cast<InitializerList*>(subInit);
-            if (subInitList)
-            {
-                // 嵌套初始化
-                res &= checkArrayInitializer(*subInitList, elements, arrayDims, dimIndex + 1, totalCount);
-            }
-            else
-            {   
-                // 展平初始化
-                totalCount++;
-                if (totalCount > totalSize)
-                {
-                    errors.push_back("Error: Too many initializers for array at line " +
-                                    std::to_string(subInit->line_num) + ", column " +
-                                    std::to_string(subInit->col_num) + ".");
-                    return false;
-                }                
-                elements.push_back(subInit->attr.val.value);
-            }
-        }
-       
-        // 默认初始化未填充的元素
-        size_t expectedSize = arrayDims[dimIndex];
-        while (elements.size() < expectedSize)
-        {
-            elements.push_back(VarValue()); // 默认初始化为 0
-            totalCount++;
         }
 
         return res;

@@ -28,6 +28,75 @@ namespace FE::AST
         return errors.empty();
     }
 
+    VarValue ASTChecker::convertType(const VarValue& src, Type* targetType) {
+        Type_t srcType = src.type->getBaseType();
+        Type_t tgtType = targetType->getBaseType();
+
+        if (srcType == tgtType) return src;
+
+        VarValue result;
+        result.type = targetType;
+
+        if (tgtType == Type_t::INT) {
+            if (srcType == Type_t::FLOAT) result.intValue = static_cast<int>(src.floatValue);
+            else if (srcType == Type_t::BOOL) result.intValue = src.boolValue ? 1 : 0;
+            else if (srcType == Type_t::LL) result.intValue = static_cast<int>(src.llValue);
+        } else if (tgtType == Type_t::FLOAT) {
+            if (srcType == Type_t::INT) result.floatValue = static_cast<float>(src.intValue);
+            else if (srcType == Type_t::BOOL) result.floatValue = src.boolValue ? 1.0f : 0.0f;
+            else if (srcType == Type_t::LL) result.floatValue = static_cast<float>(src.llValue);
+        } else if (tgtType == Type_t::BOOL) {
+            if (srcType == Type_t::INT) result.boolValue = src.intValue != 0;
+            else if (srcType == Type_t::FLOAT) result.boolValue = src.floatValue != 0.0f;
+            else if (srcType == Type_t::LL) result.boolValue = src.llValue != 0;
+        }
+        return result;
+    }
+
+    bool ASTChecker::checkArrayInitializer(InitializerList& initList, Type* elemType, std::vector<VarValue>& elements, const std::vector<int>& arrayDims, size_t dimIndex, size_t offset)    
+    {   
+        bool res = true;
+        if (dimIndex >= arrayDims.size())
+        {
+            // 对于多余的嵌套层数，尝试找到可用于合法初始化的部分
+            res &= checkArrayInitializer(initList, elemType, elements, arrayDims, dimIndex - 1, offset);
+            return res;
+        }
+
+        size_t stride = 1; // 计算当前维度的跨度
+        for (size_t i = dimIndex + 1; i < arrayDims.size(); ++i)
+            stride *= arrayDims[i];
+
+        int idx = 0;
+
+        for (auto* subInit : *(initList.init_list))
+        {
+            auto* subInitList = dynamic_cast<InitializerList*>(subInit);
+            if (subInitList)
+            {
+                // 嵌套初始化
+                res &= checkArrayInitializer(*subInitList, elemType, elements, arrayDims, dimIndex + 1, offset + idx);
+                idx+=stride;
+            }
+            else
+            {   
+                // 展平初始化
+                if (offset + idx > elements.size())
+                {
+                    errors.push_back("Error: Too many initializers for array at line " +
+                                    std::to_string(subInit->line_num) + ", column " +
+                                    std::to_string(subInit->col_num) + ".");
+                    return false;
+                }
+                VarValue converted = convertType(subInit->attr.val.value, elemType);                
+                elements[offset + idx] = converted;
+                idx++;
+            }
+        }
+       
+        return res;
+    }
+
     void ASTChecker::libFuncRegister()
     {
         // 示例实现：注册 SysY 标准库函数到 funcDecls 中

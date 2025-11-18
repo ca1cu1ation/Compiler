@@ -428,6 +428,8 @@ namespace  FE  {
       // NOCOMMA_EXPR
       // LOGICAL_OR_EXPR
       // LOGICAL_AND_EXPR
+      // BITOR_EXPR
+      // BITAND_EXPR
       // EQUALITY_EXPR
       // RELATIONAL_EXPR
       // ADDSUB_EXPR
@@ -707,19 +709,21 @@ namespace  FE  {
         S_NOCOMMA_EXPR = 78,                     // NOCOMMA_EXPR
         S_LOGICAL_OR_EXPR = 79,                  // LOGICAL_OR_EXPR
         S_LOGICAL_AND_EXPR = 80,                 // LOGICAL_AND_EXPR
-        S_EQUALITY_EXPR = 81,                    // EQUALITY_EXPR
-        S_RELATIONAL_EXPR = 82,                  // RELATIONAL_EXPR
-        S_ADDSUB_EXPR = 83,                      // ADDSUB_EXPR
-        S_MULDIV_EXPR = 84,                      // MULDIV_EXPR
-        S_UNARY_EXPR = 85,                       // UNARY_EXPR
-        S_BASIC_EXPR = 86,                       // BASIC_EXPR
-        S_FUNC_CALL_EXPR = 87,                   // FUNC_CALL_EXPR
-        S_ARRAY_DIMENSION_EXPR_LIST = 88,        // ARRAY_DIMENSION_EXPR_LIST
-        S_LEFT_VAL_EXPR = 89,                    // LEFT_VAL_EXPR
-        S_LITERAL_EXPR = 90,                     // LITERAL_EXPR
-        S_TYPE = 91,                             // TYPE
-        S_UNARY_OP = 92,                         // UNARY_OP
-        S_BREAK_STMT = 93                        // BREAK_STMT
+        S_BITOR_EXPR = 81,                       // BITOR_EXPR
+        S_BITAND_EXPR = 82,                      // BITAND_EXPR
+        S_EQUALITY_EXPR = 83,                    // EQUALITY_EXPR
+        S_RELATIONAL_EXPR = 84,                  // RELATIONAL_EXPR
+        S_ADDSUB_EXPR = 85,                      // ADDSUB_EXPR
+        S_MULDIV_EXPR = 86,                      // MULDIV_EXPR
+        S_UNARY_EXPR = 87,                       // UNARY_EXPR
+        S_BASIC_EXPR = 88,                       // BASIC_EXPR
+        S_FUNC_CALL_EXPR = 89,                   // FUNC_CALL_EXPR
+        S_ARRAY_DIMENSION_EXPR_LIST = 90,        // ARRAY_DIMENSION_EXPR_LIST
+        S_LEFT_VAL_EXPR = 91,                    // LEFT_VAL_EXPR
+        S_LITERAL_EXPR = 92,                     // LITERAL_EXPR
+        S_TYPE = 93,                             // TYPE
+        S_UNARY_OP = 94,                         // UNARY_OP
+        S_BREAK_STMT = 95                        // BREAK_STMT
       };
     };
 
@@ -761,6 +765,8 @@ namespace  FE  {
       case symbol_kind::S_NOCOMMA_EXPR: // NOCOMMA_EXPR
       case symbol_kind::S_LOGICAL_OR_EXPR: // LOGICAL_OR_EXPR
       case symbol_kind::S_LOGICAL_AND_EXPR: // LOGICAL_AND_EXPR
+      case symbol_kind::S_BITOR_EXPR: // BITOR_EXPR
+      case symbol_kind::S_BITAND_EXPR: // BITAND_EXPR
       case symbol_kind::S_EQUALITY_EXPR: // EQUALITY_EXPR
       case symbol_kind::S_RELATIONAL_EXPR: // RELATIONAL_EXPR
       case symbol_kind::S_ADDSUB_EXPR: // ADDSUB_EXPR
@@ -1161,6 +1167,8 @@ switch (yykind)
       case symbol_kind::S_NOCOMMA_EXPR: // NOCOMMA_EXPR
       case symbol_kind::S_LOGICAL_OR_EXPR: // LOGICAL_OR_EXPR
       case symbol_kind::S_LOGICAL_AND_EXPR: // LOGICAL_AND_EXPR
+      case symbol_kind::S_BITOR_EXPR: // BITOR_EXPR
+      case symbol_kind::S_BITAND_EXPR: // BITAND_EXPR
       case symbol_kind::S_EQUALITY_EXPR: // EQUALITY_EXPR
       case symbol_kind::S_RELATIONAL_EXPR: // RELATIONAL_EXPR
       case symbol_kind::S_ADDSUB_EXPR: // ADDSUB_EXPR
@@ -2597,8 +2605,8 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 444,     ///< Last index in yytable_.
-      yynnts_ = 40,  ///< Number of nonterminal symbols.
+      yylast_ = 452,     ///< Last index in yytable_.
+      yynnts_ = 42,  ///< Number of nonterminal symbols.
       yyfinal_ = 66 ///< Termination state number.
     };
 
@@ -2676,6 +2684,8 @@ switch (yykind)
       case symbol_kind::S_NOCOMMA_EXPR: // NOCOMMA_EXPR
       case symbol_kind::S_LOGICAL_OR_EXPR: // LOGICAL_OR_EXPR
       case symbol_kind::S_LOGICAL_AND_EXPR: // LOGICAL_AND_EXPR
+      case symbol_kind::S_BITOR_EXPR: // BITOR_EXPR
+      case symbol_kind::S_BITAND_EXPR: // BITAND_EXPR
       case symbol_kind::S_EQUALITY_EXPR: // EQUALITY_EXPR
       case symbol_kind::S_RELATIONAL_EXPR: // RELATIONAL_EXPR
       case symbol_kind::S_ADDSUB_EXPR: // ADDSUB_EXPR
@@ -2808,6 +2818,8 @@ switch (yykind)
       case symbol_kind::S_NOCOMMA_EXPR: // NOCOMMA_EXPR
       case symbol_kind::S_LOGICAL_OR_EXPR: // LOGICAL_OR_EXPR
       case symbol_kind::S_LOGICAL_AND_EXPR: // LOGICAL_AND_EXPR
+      case symbol_kind::S_BITOR_EXPR: // BITOR_EXPR
+      case symbol_kind::S_BITAND_EXPR: // BITAND_EXPR
       case symbol_kind::S_EQUALITY_EXPR: // EQUALITY_EXPR
       case symbol_kind::S_RELATIONAL_EXPR: // RELATIONAL_EXPR
       case symbol_kind::S_ADDSUB_EXPR: // ADDSUB_EXPR
@@ -2971,7 +2983,7 @@ switch (yykind)
 
 #line 4 "frontend/parser/yacc.y"
 } //  FE 
-#line 2975 "frontend/parser/yacc.h"
+#line 2987 "frontend/parser/yacc.h"
 
 
 

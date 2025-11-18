@@ -91,6 +91,8 @@
 %nterm <FE::AST::ExprNode*> ADDSUB_EXPR
 %nterm <FE::AST::ExprNode*> RELATIONAL_EXPR
 %nterm <FE::AST::ExprNode*> EQUALITY_EXPR
+%nterm <FE::AST::ExprNode*> BITOR_EXPR
+%nterm <FE::AST::ExprNode*> BITAND_EXPR
 %nterm <FE::AST::ExprNode*> LOGICAL_AND_EXPR
 %nterm <FE::AST::ExprNode*> LOGICAL_OR_EXPR
 %nterm <FE::AST::ExprNode*> ASSIGN_EXPR
@@ -351,27 +353,6 @@ VAR_DECLARATOR:
     | LEFT_VAL_EXPR ASSIGN INITIALIZER {
         $$ = new VarDeclarator($1, $3, @1.begin.line, @1.begin.column);
     }
-    | IDENT LBRACKET RBRACKET {
-        Entry* entry = Entry::getEntry($1);
-        std::vector<ExprNode*>* dim = new std::vector<ExprNode*>();
-        dim->emplace_back(new LiteralExpr(-1, @2.begin.line, @2.begin.column));
-        ExprNode* lval = new LeftValExpr(entry, dim, @1.begin.line, @1.begin.column);
-        $$ = new VarDeclarator(lval, nullptr, @1.begin.line, @1.begin.column);
-    }
-    | IDENT LBRACKET RBRACKET ARRAY_DIMENSION_EXPR_LIST {
-        Entry* entry = Entry::getEntry($1);
-        std::vector<ExprNode*>* dim = $4;
-        dim->emplace_back(new LiteralExpr(-1, @2.begin.line, @2.begin.column));
-        ExprNode* lval = new LeftValExpr(entry, dim, @1.begin.line, @1.begin.column);
-        $$ = new VarDeclarator(lval, nullptr, @1.begin.line, @1.begin.column);
-    }
-    | IDENT LBRACKET RBRACKET ARRAY_DIMENSION_EXPR_LIST ASSIGN INITIALIZER {
-        Entry* entry = Entry::getEntry($1);
-        std::vector<ExprNode*>* dim = $4;
-        dim->emplace_back(new LiteralExpr(-1, @2.begin.line, @2.begin.column));
-        ExprNode* lval = new LeftValExpr(entry, dim, @1.begin.line, @1.begin.column);
-        $$ = new VarDeclarator(lval, $6, @1.begin.line, @1.begin.column);
-    }
     ;
 
 VAR_DECLARATOR_LIST:
@@ -389,6 +370,10 @@ INITIALIZER:
     /* TODO(Lab2): Implement variable initializer rule */
     NOCOMMA_EXPR {
         $$ = new Initializer($1, @1.begin.line, @1.begin.column);
+    }
+    | LBRACE RBRACE {
+        std::vector<InitDecl*>* initList = new std::vector<InitDecl*>();
+        $$ = new InitializerList(initList, @1.begin.line, @1.begin.column);
     }
     | LBRACE INITIALIZER_LIST RBRACE {
         $$ = new InitializerList($2, @1.begin.line, @1.begin.column);
@@ -464,8 +449,24 @@ LOGICAL_AND_EXPR:
     EQUALITY_EXPR {
         $$ = $1;
     }
-    | LOGICAL_AND_EXPR AND EQUALITY_EXPR {
+    | LOGICAL_AND_EXPR AND BITOR_EXPR {
         $$ = new BinaryExpr(Operator::AND, $1, $3, @2.begin.line, @2.begin.column);
+    };
+
+BITOR_EXPR:
+    BITAND_EXPR {
+        $$ = $1;
+    }
+    | BITOR_EXPR BITOR BITAND_EXPR {
+        $$ = new BinaryExpr(Operator::BITOR, $1, $3, @2.begin.line, @2.begin.column);
+    };
+
+BITAND_EXPR:
+    EQUALITY_EXPR {
+        $$ = $1;
+    }
+    | BITAND_EXPR BITAND EQUALITY_EXPR {
+        $$ = new BinaryExpr(Operator::BITAND, $1, $3, @2.begin.line, @2.begin.column);
     };
 
 EQUALITY_EXPR:

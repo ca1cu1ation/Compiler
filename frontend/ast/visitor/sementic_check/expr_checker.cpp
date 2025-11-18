@@ -61,7 +61,7 @@ namespace FE::AST
                                     std::to_string(node.col_num) + ".");
                     res = false;
                 }
-
+                size_t offset = 0;
                 for (size_t i = 0; i < node.indices->size(); ++i)
                 {
                     auto& index = (*node.indices)[i];
@@ -88,16 +88,26 @@ namespace FE::AST
                         res = false;
                         continue;
                     }
+                    size_t mul = 1;
+                    for (size_t j = i + 1; j < varAttr->arrayDims.size(); ++j) {
+                        mul *= varAttr->arrayDims[j];
+                    }
+                    offset += subscript * mul;
                 }
+                // 计算偏移量并获取数组元素值
+                if( offset < varAttr->initList.size()) node.attr.val.value = varAttr->initList[offset];
+            }
+            else{
+                // 非数组调用，直接获取变量值
+                node.attr.val.value = varAttr->initList.begin() != varAttr->initList.end() ? *(varAttr->initList.begin()) : VarValue();
             }
         }
 
-        // 设置表达式属性
-        node.attr.val.value = varAttr->initList.begin() != varAttr->initList.end() ? *(varAttr->initList.begin()) : VarValue();
-        node.attr.val.value.type = varAttr->type;
-        node.attr.val.isConstexpr = varAttr->isConstDecl;
-        return res;
-    }
+            // 设置表达式属性
+            node.attr.val.value.type = varAttr->type;
+            node.attr.val.isConstexpr = varAttr->isConstDecl;
+            return res;
+        }
 
     bool ASTChecker::visit(LiteralExpr& node)
     {
@@ -114,25 +124,23 @@ namespace FE::AST
         if (!apply(*this, *node.expr))
             return false;
 
+        bool res = true;
+
         // 检查操作数类型并进行隐式类型转换
-        if (node.op == Operator::NOT)
+        if (node.op == Operator::NOT || node.op == Operator::SUB || node.op == Operator::ADD)
         {
-            if (node.expr->attr.val.value.type == intType)
-            {
-                // 隐式转换 int -> bool
-                node.expr->attr.val.value.type = boolType;
+            bool hasError = false;
+            ExprValue result = typeInfer(node.expr->attr.val, node.op, node, hasError);
+            if (hasError) {
+                errors.push_back("Error: Unary operator requires a right operand at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
+                res = false;
             }
-            else if (node.expr->attr.val.value.type != boolType)
-            {
-                errors.push_back("Error: Unary NOT operator requires a boolean or integer operand at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
-                return false;
-            }
+            node.expr->attr.val = result;
         }
 
         // 设置表达式属性
-        node.attr.val.value.type = node.expr->attr.val.value.type;
-        node.attr.val.isConstexpr = node.expr->attr.val.isConstexpr;
-        return true;
+        node.attr.val = node.expr->attr.val;
+        return res;
     }
 
     bool ASTChecker::visit(BinaryExpr& node)
@@ -140,6 +148,8 @@ namespace FE::AST
         // 访问左右子表达式
         if (!apply(*this, *node.lhs) || !apply(*this, *node.rhs))
             return false;
+
+        bool res = true;
 
         // 检查操作数是否为 void 类型
         if (node.lhs->attr.val.value.type == voidType || node.rhs->attr.val.value.type == voidType)
@@ -161,6 +171,14 @@ namespace FE::AST
                 return false;
             }
 
+            // 检查类型兼容性
+            bool hasError = false;
+            ExprValue result = typeInfer(node.lhs->attr.val, node.rhs->attr.val, node.op, node, hasError);
+            if (hasError) {
+                res = false;
+            }
+            node.attr.val = result;
+
             // 检查是否对 const 变量进行赋值
             auto varAttr = symTable.getSymbol(leftValExpr->entry);            
             if (varAttr->isConstDecl && varAttr->isInitialized)
@@ -169,117 +187,34 @@ namespace FE::AST
                 return false;
             }
             varAttr->isInitialized = true;
-
-            // 检查类型兼容性
-            if (node.lhs->attr.val.value.type != node.rhs->attr.val.value.type)
-            {
-                // 如果需要，可以在这里添加隐式类型转换逻辑
-                errors.push_back("Error: Type mismatch in assignment at line " +
-                                std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
-                return false;
-            }
+            varAttr->initList.push_back(node.attr.val.value);
 
             node.attr.val.isConstexpr = false;  // 赋值表达式不是编译期常量
-            return true;
+            return res;
         }
-        // 检查操作数类型并进行隐式类型转换
+        // 检查操作数类型并进行隐式类型转换和常量折叠
         else if (node.op == Operator::ADD || node.op == Operator::SUB ||
-            node.op == Operator::MUL || node.op == Operator::DIV || node.op == Operator::MOD)
+            node.op == Operator::MUL || node.op == Operator::DIV || node.op == Operator::MOD ||
+            node.op == Operator::AND || node.op == Operator::OR || node.op == Operator::GT ||
+            node.op == Operator::GE || node.op == Operator::LT || node.op == Operator::LE ||
+            node.op == Operator::EQ || node.op == Operator::NEQ ||
+            node.op == Operator::BITOR || node.op == Operator::BITAND)
         {
-            if (node.lhs->attr.val.value.type == boolType)
-            {
-                // 隐式转换 bool -> int
-                node.lhs->attr.val.value.type = intType;
+            // 隐式类型转换和常量折叠统一交给 typeInfer
+            bool hasError = false;
+            ExprValue result = typeInfer(node.lhs->attr.val, node.rhs->attr.val, node.op, node, hasError);
+            if (hasError) {
+                res = false;
             }
-            if (node.rhs->attr.val.value.type == boolType)
-            {
-                // 隐式转换 bool -> int
-                node.rhs->attr.val.value.type = intType;
-            }
-
-            if (node.lhs->attr.val.value.type != intType ||
-                node.rhs->attr.val.value.type != intType)
-            {
-                errors.push_back("Error: Arithmetic operators require integer operands at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
-                return false;
-            }
-            
-            // 常量折叠
-            if (node.lhs->attr.val.isConstexpr && node.rhs->attr.val.isConstexpr)
-            {
-                int lhsValue = node.lhs->attr.val.value.intValue;
-                int rhsValue = node.rhs->attr.val.value.intValue;
-                int result = 0;
-
-                switch (node.op)
-                {
-                case Operator::ADD:
-                    result = lhsValue + rhsValue;
-                    break;
-                case Operator::SUB:
-                    result = lhsValue - rhsValue;
-                    break;
-                case Operator::MUL:
-                    result = lhsValue * rhsValue;
-                    break;
-                case Operator::MOD:
-                    result = lhsValue % rhsValue;
-                    break;
-                case Operator::DIV:
-                    if (rhsValue == 0)
-                    {
-                        errors.push_back("Error: Division by zero at line " +
-                                        std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
-                        return false;
-                    }
-                    result = lhsValue / rhsValue;
-                    break;
-                default:
-                    break;
-                }
-
-                // 设置结果为编译期常量
-                node.attr.val.isConstexpr = true;
-                node.attr.val.value.intValue = result;
-            }
-            else
-            {
-                // 如果不是常量，设置为非编译期常量
-                node.attr.val.isConstexpr = false;
-            }
-
-            // 检查除法中的除数是否为 0
-            if (node.op == Operator::DIV && node.rhs->attr.val.isConstexpr && node.rhs->attr.val.value.intValue == 0)
-            {
-                errors.push_back("Error: Division by zero at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
-                return false;
-            }
-
+            node.attr.val = result;
+            return res;
         }
-        else if (node.op == Operator::AND || node.op == Operator::OR)
-        {
-            if (node.lhs->attr.val.value.type == intType)
-            {
-                // 隐式转换 int -> bool
-                node.lhs->attr.val.value.type = boolType;
-            }
-            if (node.rhs->attr.val.value.type == intType)
-            {
-                // 隐式转换 int -> bool
-                node.rhs->attr.val.value.type = boolType;
-            }
-
-            if (node.lhs->attr.val.value.type != boolType ||
-                node.rhs->attr.val.value.type != boolType)
-            {
-                errors.push_back("Error: Logical operators require boolean operands at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
-                return false;
-            }
+        else
+        {            
+            errors.push_back("Error: Invalid binary operator at line " +
+                                std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
+            return false;
         }
-
-        // 设置表达式属性
-        node.attr.val.value.type = node.lhs->attr.val.value.type;
-        return true;
     }
 
     bool ASTChecker::visit(CallExpr& node)
@@ -296,7 +231,7 @@ namespace FE::AST
 
         // 检查参数数量和类型
         if (node.args && funcDecl->params)
-        {
+        {   
             if (node.args->size() != funcDecl->params->size())
             {
                 errors.push_back("Error: Argument count mismatch for function " + node.func->getName() + " at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
@@ -304,13 +239,36 @@ namespace FE::AST
             }
 
             for (size_t i = 0; i < node.args->size(); ++i)
-            {
+            {   
                 if (!apply(*this, *(*node.args)[i]))
                     return false;
-                if ((*node.args)[i]->attr.val.value.type != (*funcDecl->params)[i]->attr.val.value.type)
+                // 检查参数类型是否匹配
+                VarValue converted = convertType((*node.args)[i]->attr.val.value, (*funcDecl->params)[i]->attr.val.value.type);
+                if (converted.type != (*funcDecl->params)[i]->attr.val.value.type)
                 {
                     errors.push_back("Error: Argument type mismatch for function " + node.func->getName() + " at line " + std::to_string((*node.args)[i]->line_num) + ", column " + std::to_string((*node.args)[i]->col_num) + ".");
                     return false;
+                }
+                // 进一步检查数组参数的维度匹配                
+                if((*funcDecl->params)[i]->dims != nullptr){                    
+                    auto leftValExpr = dynamic_cast<LeftValExpr*>((*node.args)[i]);
+                    if(!leftValExpr){
+                        errors.push_back("Error: Array argument must be a left value at line " + std::to_string((*node.args)[i]->line_num) + ", column " + std::to_string((*node.args)[i]->col_num) + ".");
+                        return false;
+                    }
+                    auto sym = symTable.getSymbol(leftValExpr->entry);
+                    size_t offset = leftValExpr->indices != nullptr ? leftValExpr->indices->size():0;                                    
+                    if((*funcDecl->params)[i]->dims->size() != sym->arrayDims.size() - offset){
+                        errors.push_back("Error: Array argument dimension count mismatch at line " + std::to_string((*node.args)[i]->line_num) + ", column " + std::to_string((*node.args)[i]->col_num) + ".");
+                        return false;
+                    }
+                    for(size_t d = 0; d < (*funcDecl->params)[i]->dims->size(); ++d){
+                        if(d==0) continue; // 第一个维度不需要匹配
+                        if((*funcDecl->params)[i]->dims->at(d)->attr.val.value.intValue != (sym->arrayDims)[d + offset]){
+                            errors.push_back("Error: Array argument dimension size mismatch at line " + std::to_string((*node.args)[i]->line_num) + ", column " + std::to_string((*node.args)[i]->col_num) + ".");
+                            return false;
+                        }
+                    }               
                 }
             }
         }
