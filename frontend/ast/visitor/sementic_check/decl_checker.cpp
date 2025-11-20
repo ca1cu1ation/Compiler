@@ -64,12 +64,6 @@ namespace FE::AST
             res = false;
         }
 
-        // 根据作用域添加到全局符号表
-        if (symTable.isGlobalScope())
-        {
-            glbSymbols[entry] = varAttr;
-        }
-
         // 访问 lval 表达式以设置其属性
         res &= apply(*this, *node.lval);
         
@@ -128,6 +122,12 @@ namespace FE::AST
                 sym->initList.push_back(converted);
                 res = true;
             }
+        }
+
+        // 根据作用域添加到全局符号表
+        if (symTable.isGlobalScope())
+        {
+            glbSymbols[entry] = *sym;
         }
 
         return res;

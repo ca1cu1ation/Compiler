@@ -50,22 +50,76 @@ namespace ME
 
     void ASTCodeGen::handleGlobalVarDecl(FE::AST::VarDeclStmt* decls, Module* m)
     {
-        // TODO(Lab 3-2): 生成全局变量声明 IR（支持标量与数组的初值）
         (void)decls;
-        (void)m;
-        TODO("Lab3-2: Implement global var declaration IR generation");
+        // 使用语义检查器提供的 glbSymbols 注册全局变量
+        for (auto& [entry, attr] : glbSymbols)
+        {
+            DataType dt = convert(attr.type);
+            std::string name = entry->getName();
+            if (attr.arrayDims.empty())
+            {
+                // 标量或简单指针
+                if (!attr.initList.empty())
+                {
+                    // 对于标量初始化，将第一个初值转换为立即数 Operand 并传入 GlbVarDeclInst
+                    ME::Operand* initOp = nullptr;
+                    const auto& vv     = attr.initList[0];
+                    if (vv.type == FE::AST::intType || vv.type == FE::AST::llType || vv.type == FE::AST::boolType)
+                    {
+                        // 将 bool/ll/int 都当作 i32 立即数打印（前端已保证类型匹配或转换）
+                        initOp = getImmeI32Operand(vv.getInt());
+                    }
+                    else if (vv.type == FE::AST::floatType)
+                    {
+                        initOp = getImmeF32Operand(vv.getFloat());
+                    }
+                    // 传入构造函数（如果 initOp 为 nullptr，将退化为 zeroinitializer）
+                    m->globalVars.emplace_back(new GlbVarDeclInst(dt, name, initOp));
+                }
+                else
+                {
+                    m->globalVars.emplace_back(new GlbVarDeclInst(dt, name, nullptr));
+                }
+            }
+            else
+            {
+                // 数组类型，使用 initList 构造函数
+                m->globalVars.emplace_back(new GlbVarDeclInst(dt, name, attr));
+            }
+        }
     }
 
     void ASTCodeGen::visit(FE::AST::Root& node, Module* m)
     {
-        // 示例：注册库函数
-        libFuncRegister(m);
+        // 先生成全局变量声明（从语义检查器提供的全局符号表）
+        handleGlobalVarDecl(nullptr, m);
 
-        // TODO(Lab 3-2): 生成模块级 IR
-        // 处理顶层语句：全局变量声明、函数定义等
-        (void)node;
-        (void)m;
-        TODO("Lab3-2: Implement Root IR generation");
+        // 生成所有函数声明（来自语义检查器提供的 funcDecls）
+        for (auto& [entry, fdecl] : funcDecls)
+        {
+            DataType rt = convert(fdecl->retType);
+            std::vector<DataType> argTypes;
+            if (fdecl->params)
+            {
+                for (auto p : *fdecl->params)
+                {
+                    DataType at = convert(p->type);
+                    if (p->dims) at = DataType::PTR; // 数组作为指针传参
+                    argTypes.push_back(at);
+                }
+            }
+            m->funcDecls.emplace_back(new FuncDeclInst(rt, entry->getName(), argTypes));
+        }
+
+        // 生成函数定义（如果有函数体）
+        for (auto stmt : *node.getStmts())
+        {
+            if (!stmt) continue;
+            if (!stmt->isVarDeclStmt())
+            {
+                apply(*this, *stmt, m);
+            }
+        }
     }
 
     LoadInst* ASTCodeGen::createLoadInst(DataType t, Operand* ptr, size_t resReg)
@@ -269,3 +323,5 @@ namespace ME
         return insts;
     }
 }  // namespace ME
+
+    
