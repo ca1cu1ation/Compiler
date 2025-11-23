@@ -85,9 +85,9 @@ namespace ME
     }
 
     void ASTCodeGen::visit(FE::AST::UnaryExpr& node, Module* m)
-    {
-        // 一元运算
-        handleUnaryCalc(node, node.op, curBlock, m);
+    {   
+        // 调用handleUnaryCalc递归处理所有嵌套的一元运算
+        handleUnaryCalc(*node.expr, node.op, curBlock, m);
     }
 
     void ASTCodeGen::handleAssign(FE::AST::LeftValExpr& lhs, FE::AST::ExprNode& rhs, Module* m)
@@ -239,32 +239,49 @@ namespace ME
     }
 
     void ASTCodeGen::visit(FE::AST::CallExpr& node, Module* m)
-    {
-        // 生成实参
-        CallInst::argList args;
-        if (node.args)
-        {
-            for (auto a : *node.args)
-            {
-                apply(*this, *a, m);
-                size_t reg = getMaxReg();
-                DataType at = convert(a->attr.val.value.type);
-                args.emplace_back(at, getRegOperand(reg));
-            }
-        }
-
+    {   
         // 函数名
         std::string fname = node.func->getName();
-        // 获取被调用函数的返回类型（若在 funcDecls 中）
+        
+        // 获取被调用函数的返回类型和参数类型（若在 funcDecls 中）
         DataType retType = DataType::VOID;
+        std::vector<DataType> targetArgTypes;
         for (auto& pd : funcDecls)
-        {
+        {   
             if (pd.first->getName() == fname)
-            {
+            {                   
                 retType = convert(pd.second->retType);
+                if(pd.second->params){
+                    for (auto param : *pd.second->params) {
+                        targetArgTypes.push_back(convert(param->type));                
+                    }
+                }
                 break;
             }
         }
+        
+        // 生成实参并做类型转换
+        CallInst::argList args;
+        if (node.args) {
+            size_t idx = 0;
+            for (auto a : *node.args) {
+                apply(*this, *a, m);
+                size_t reg = getMaxReg();
+                DataType at = convert(a->attr.val.value.type);
+                if (at == DataType::I1) {
+                    at= DataType::I32;
+                }
+                DataType targetType = (idx < targetArgTypes.size()) ? targetArgTypes[idx] : at;
+                if (at != targetType) {
+                    auto convs = createTypeConvertInst(at, targetType, reg);
+                    for (auto& inst : convs) insert(inst);
+                    reg = getMaxReg();
+                    at = targetType;
+                }
+                args.emplace_back(at, getRegOperand(reg));
+                idx++;
+            }
+        }   
 
         if (retType != DataType::VOID)
         {

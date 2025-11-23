@@ -90,26 +90,12 @@ namespace ME
     }
 
     void ASTCodeGen::visit(FE::AST::Root& node, Module* m)
-    {
+    {   
+        // 注册库函数声明
+        libFuncRegister(m);
+
         // 先生成全局变量声明（从语义检查器提供的全局符号表）
         handleGlobalVarDecl(nullptr, m);
-
-        // 生成所有函数声明（来自语义检查器提供的 funcDecls）
-        for (auto& [entry, fdecl] : funcDecls)
-        {
-            DataType rt = convert(fdecl->retType);
-            std::vector<DataType> argTypes;
-            if (fdecl->params)
-            {
-                for (auto p : *fdecl->params)
-                {
-                    DataType at = convert(p->type);
-                    if (p->dims) at = DataType::PTR; // 数组作为指针传参
-                    argTypes.push_back(at);
-                }
-            }
-            m->funcDecls.emplace_back(new FuncDeclInst(rt, entry->getName(), argTypes));
-        }
 
         // 生成函数定义（如果有函数体）
         for (auto stmt : *node.getStmts())

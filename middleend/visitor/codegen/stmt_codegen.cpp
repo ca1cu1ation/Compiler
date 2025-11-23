@@ -159,19 +159,32 @@ namespace ME
 
         apply(*this, *node.cond, m);
         size_t condReg = getMaxReg();
-        insert(createBranchInst(condReg, thenL, node.elseStmt ? elseL : endL));
+        DataType condType = convert(node.cond->attr.val.value.type);
+        if (condType != DataType::I1) {
+            auto convs = createTypeConvertInst(condType, DataType::I1, condReg);
+            for (auto& inst : convs) insert(inst);
+            condReg = getMaxReg();
+        }
 
         // then
-        enterBlock(thenL);
-        apply(*this, *node.thenStmt, m);
-        if (!curBlock->insts.empty() && !curBlock->insts.back()->isTerminator()) insert(createBranchInst(endL));
+        enterBlock(thenL);        
+        name2reg.enterScope();
+        if (node.thenStmt) {
+            apply(*this, *node.thenStmt, m);
+        }
+        name2reg.exitScope();
+        // 如果 then 块为空或没有终结指令，补充跳转到 end
+        if (curBlock->insts.empty() || !curBlock->insts.back()->isTerminator())
+            insert(createBranchInst(endL));
 
         // else
-        if (node.elseStmt)
-        {
+        if (node.elseStmt) {
             enterBlock(elseL);
+            name2reg.enterScope();
             apply(*this, *node.elseStmt, m);
-            if (!curBlock->insts.empty() && !curBlock->insts.back()->isTerminator()) insert(createBranchInst(endL));
+            name2reg.exitScope();
+            if (curBlock->insts.empty() || !curBlock->insts.back()->isTerminator())
+            insert(createBranchInst(endL));
         }
 
         // end

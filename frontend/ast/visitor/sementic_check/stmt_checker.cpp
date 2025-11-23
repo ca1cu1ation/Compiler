@@ -155,7 +155,7 @@ namespace FE::AST
         }
 
         // 检查 then 分支
-        if (!apply(*this, *node.thenStmt))
+        if (node.thenStmt && !apply(*this, *node.thenStmt))
             res = false;
 
         // 检查 else 分支（如果存在）

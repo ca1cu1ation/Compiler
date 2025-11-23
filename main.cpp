@@ -54,7 +54,7 @@ int main(int argc, char** argv)
     {
         string arg = argv[i];
 
-        if (arg == "-lexer" || arg == "-parser" || arg == "-llvm" || arg == "-S") { step = arg; }
+        if (arg == "-lexer" || arg == "-parser" || arg== "-semantic" || arg == "-llvm" || arg == "-S") { step = arg; }
         else if (arg == "-o")
         {
             if (i + 1 < argc)
@@ -269,6 +269,15 @@ int main(int argc, char** argv)
             goto cleanup_ast;
         }
 
+        if (step == "-semantic")
+        {
+            FE::AST::ASTPrinter printer;
+            std::ostream*       osPtr = outStream;
+            apply(printer, *ast, osPtr);
+
+            ret = 0;
+            goto cleanup_ast;
+        }
         /*
          * Lab 3-2: 中间代码生成 (IR Generation)
          *
@@ -296,7 +305,7 @@ int main(int argc, char** argv)
          * 提示:
          * - 可先实现字面量、简单算术与顺序语句, 再逐步支持数组与控制流
          * - 通过 -llvm 输出验证 IR 是否符合预期
-         * 单个中间代码生成bin/compiler -llvm testcase/parser/test.sy -o test_output/test.ll
+         * 单个中间代码生成bin/compiler -llvm testcase/functional/Basic/1_bang.sy -o test_output/test.ll
          * 测试脚本测试python3 test.py --stage=llvm --group={Basic, Advanced} --opt={0, 1, 2}
          */
         ME::ASTCodeGen codegen(checker.getGlbSymbols(), checker.getFuncDecls());
