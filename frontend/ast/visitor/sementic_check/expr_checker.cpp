@@ -135,11 +135,15 @@ namespace FE::AST
                 errors.push_back("Error: Unary operator requires a right operand at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
                 res = false;
             }
-            node.expr->attr.val = result;
-        }
 
-        // 设置表达式属性
-        node.attr.val = node.expr->attr.val;
+            // 设置表达式属性
+            node.attr.val = result;
+        }
+        else
+        {
+            errors.push_back("Error: Invalid unary operator at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
+            return false;
+        }        
         return res;
     }
 

@@ -25,6 +25,9 @@ namespace FE::AST
             return false;
         }
 
+        // 将函数添加到函数声明表
+        funcDecls[node.entry] = &node;
+
         // 设置当前函数的返回类型
         curFuncRetType = voidType;
         funcHasReturn = false;
@@ -44,21 +47,19 @@ namespace FE::AST
             res = false;
 
         // 检查是否存在 return 语句
-        if (!funcHasReturn)
+        if (!funcHasReturn && curFuncRetType != voidType && node.entry!=Sym::Entry::getEntry("main"))
         {
             errors.push_back("Error: Function " + node.entry->getName() + " must have a return statement.");
             res = false;
         }
 
         // 检查返回类型是否匹配
-        if(curFuncRetType !=node.retType)
+        if(curFuncRetType !=node.retType && node.entry!=Sym::Entry::getEntry("main"))
         {
             errors.push_back("Error: Function " + node.entry->getName() + " return type mismatch.");
             res = false;
         }
-
-        // 将函数添加到函数声明表
-        funcDecls[node.entry] = &node;
+        
         // 退出作用域
         symTable.exitScope();
         return res;

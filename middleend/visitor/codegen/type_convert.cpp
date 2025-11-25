@@ -222,30 +222,30 @@ namespace ME
 
         apply(*this, node, m);
         size_t srcReg = getMaxReg();
+
         DataType srcType = convert(node.attr.val.value.type);
 
-        ASSERT(srcType == DataType::I32 || srcType == DataType::F32 || srcType == DataType::I1);
+        if (srcType == DataType::I1)
+        {
+            auto convInsts = createTypeConvertInst(srcType, DataType::I32, srcReg);
+            for (auto& inst : convInsts) block->insert(inst);
+            srcReg  = getMaxReg();
+            srcType = DataType::I32;
+        }
+
+        ASSERT(srcType == DataType::I32 || srcType == DataType::F32);
 
         UnaryOpFunc opFunc = nullptr;
         if (srcType == DataType::I32)
             opFunc = unaryIntOps[uop];
         else if (srcType == DataType::F32)
             opFunc = unaryFloatOps[uop];
-        else if (srcType == DataType::I1 && uop == FE::AST::Operator::NOT)
-            opFunc = unaryIntOps[uop]; // 允许对布尔值做NOT
         else
             ERROR("Unary op type not supported");
 
         if (!opFunc) ERROR("Unary op not supported");
 
         opFunc(this, block, srcReg);
-
-        //只在NOT后扩展为i32
-        if (uop == FE::AST::Operator::NOT) {
-            size_t lastReg = getMaxReg();
-            auto convInsts = createTypeConvertInst(DataType::I1, DataType::I32, lastReg);
-            for (auto& inst : convInsts) block->insert(inst);
-        }
     }
 
     DataType promoteType(DataType t1, DataType t2)

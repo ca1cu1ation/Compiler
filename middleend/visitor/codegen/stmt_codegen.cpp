@@ -50,15 +50,11 @@ namespace ME
         if (node.body) apply(*this, *node.body, m);
 
         // 如果最后一个基本块没有 terminator，则补上返回指令
-        if (curBlock && !curBlock->insts.empty())
+        if (curBlock->insts.empty()|| !curBlock->insts.back()->isTerminator())
         {
-            Instruction* last = curBlock->insts.back();
-            if (!last->isTerminator())
-            {
-                if (retType == DataType::VOID) insert(createRetInst());
-                else if (retType == DataType::I32) insert(createRetInst(0));
-                else if (retType == DataType::F32) insert(createRetInst(0.0f));
-            }
+            if (retType == DataType::VOID) insert(createRetInst());
+            else if (retType == DataType::I32) insert(createRetInst(0));
+            else if (retType == DataType::F32) insert(createRetInst(0.0f));
         }
 
         exitBlock();
@@ -121,6 +117,12 @@ namespace ME
         enterBlock(condL);
         apply(*this, *node.cond, m);
         size_t condReg = getMaxReg();
+        DataType condType = convert(node.cond->attr.val.value.type);
+        if (condType != DataType::I1) {
+            auto convs = createTypeConvertInst(condType, DataType::I1, condReg);
+            for (auto& inst : convs) insert(inst);
+            condReg = getMaxReg();
+        }
         insert(createBranchInst(condReg, bodyL, endL));
 
         // body
@@ -133,7 +135,7 @@ namespace ME
         enterBlock(bodyL);
         apply(*this, *node.body, m);
         // 若 body 未以 terminator 结束，则回到 cond
-        if (!curBlock->insts.empty() && !curBlock->insts.back()->isTerminator()) insert(createBranchInst(condL));
+        if (curBlock->insts.empty() || !curBlock->insts.back()->isTerminator()) insert(createBranchInst(condL));
 
         // 恢复循环标签
         curFunc->loopStartLabel = prevLoopStart;
@@ -165,6 +167,7 @@ namespace ME
             for (auto& inst : convs) insert(inst);
             condReg = getMaxReg();
         }
+        insert(createBranchInst(condReg, thenL, node.elseStmt ? elseL : endL));
 
         // then
         enterBlock(thenL);        

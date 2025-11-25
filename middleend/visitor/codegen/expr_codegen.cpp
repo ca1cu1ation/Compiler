@@ -144,17 +144,36 @@ namespace ME
         // 评估 lhs
         apply(*this, lhs, m);
         size_t lhsReg = getMaxReg();
+        DataType lhsType = convert(lhs.attr.val.value.type);        
+        size_t lhsBool;
+        if (lhsType == DataType::I1) {
+            // 直接用，不需要再做icmp
+            lhsBool = lhsReg;
+        } else{
+            // 需要icmp
+            lhsBool = getNewRegId();
+            IcmpInst* icmp = createIcmpInst_ImmeRight(ICmpOp::NE, lhsReg, 0, lhsBool);
+            insert(icmp);
+        }
         // make branch
-        insert(createBranchInst(lhsReg, rhsLabel, falseLabel));
+        insert(createBranchInst(lhsBool, rhsLabel, falseLabel));
 
         // rhs block
         enterBlock(rhsLabel);
         apply(*this, rhs, m);
         size_t rhsReg = getMaxReg();
         // convert rhs to i1 if needed
-        size_t rhsBool = getNewRegId();
-        IcmpInst* icmp = createIcmpInst_ImmeRight(ICmpOp::NE, rhsReg, 0, rhsBool);
-        insert(icmp);
+        DataType rhsType = convert(rhs.attr.val.value.type);
+        size_t rhsBool;
+        if (rhsType == DataType::I1) {
+            // 直接用，不需要再做icmp
+            rhsBool = rhsReg;
+        } else {
+            // 需要icmp
+            rhsBool = getNewRegId();
+            IcmpInst* icmp = createIcmpInst_ImmeRight(ICmpOp::NE, rhsReg, 0, rhsBool);
+            insert(icmp);
+        }
         insert(createBranchInst(endLabel));
 
         // false block
@@ -165,7 +184,7 @@ namespace ME
         // end block: phi
         enterBlock(endLabel);
         size_t dest = getNewRegId();
-        PhiInst* phi = new PhiInst(DataType::I32, getRegOperand(dest));
+        PhiInst* phi = new PhiInst(DataType::I1, getRegOperand(dest));
         // incoming from rhsB is rhsBool, from falseB is 0
         phi->addIncoming(getRegOperand(rhsBool), getLabelOperand(rhsLabel));
         phi->addIncoming(getImmeI32Operand(0), getLabelOperand(falseLabel));
@@ -187,8 +206,19 @@ namespace ME
 
         apply(*this, lhs, m);
         size_t lhsReg = getMaxReg();
-        insert(createBranchInst(lhsReg, trueLabel, rhsLabel));
-
+        DataType lhsType = convert(lhs.attr.val.value.type);
+        size_t lhsBool;
+        if (lhsType == DataType::I1) {
+            // 直接用，不需要再做icmp
+            lhsBool = lhsReg;
+        } else {
+            // 需要icmp
+            lhsBool = getNewRegId();
+            IcmpInst* icmp = createIcmpInst_ImmeRight(ICmpOp::NE, lhsReg, 0, lhsBool);
+            insert(icmp);
+        }
+        insert(createBranchInst(lhsBool, trueLabel, rhsLabel));
+        
         // true block
         enterBlock(trueLabel);
         insert(createBranchInst(endLabel));
@@ -196,16 +226,24 @@ namespace ME
         // rhs block
         enterBlock(rhsLabel);
         apply(*this, rhs, m);
+        DataType rhsType = convert(rhs.attr.val.value.type);
         size_t rhsReg = getMaxReg();
-        size_t rhsBool = getNewRegId();
-        IcmpInst* icmp = createIcmpInst_ImmeRight(ICmpOp::NE, rhsReg, 0, rhsBool);
-        insert(icmp);
+        size_t rhsBool;
+        if (rhsType == DataType::I1) {
+            // 直接用，不需要再做icmp
+            rhsBool = rhsReg;
+        } else {
+            // 需要icmp
+            rhsBool = getNewRegId();
+            IcmpInst* icmp = createIcmpInst_ImmeRight(ICmpOp::NE, rhsReg, 0, rhsBool);
+            insert(icmp);
+        }
         insert(createBranchInst(endLabel));
 
         // end block: phi
         enterBlock(endLabel);
         size_t dest = getNewRegId();
-        PhiInst* phi = new PhiInst(DataType::I32, getRegOperand(dest));
+        PhiInst* phi = new PhiInst(DataType::I1, getRegOperand(dest));
         phi->addIncoming(getImmeI32Operand(1), getLabelOperand(trueLabel));
         phi->addIncoming(getRegOperand(rhsBool), getLabelOperand(rhsLabel));
         insert(phi);
@@ -268,9 +306,6 @@ namespace ME
                 apply(*this, *a, m);
                 size_t reg = getMaxReg();
                 DataType at = convert(a->attr.val.value.type);
-                if (at == DataType::I1) {
-                    at= DataType::I32;
-                }
                 DataType targetType = (idx < targetArgTypes.size()) ? targetArgTypes[idx] : at;
                 if (at != targetType) {
                     auto convs = createTypeConvertInst(at, targetType, reg);
