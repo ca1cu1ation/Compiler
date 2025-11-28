@@ -101,6 +101,13 @@ namespace ME
         std::map<size_t, bool>                    paramPtrTab;  // if the i-th param is a pointer or not
         std::map<FE::AST::LeftValExpr*, Operand*> lval2ptr;
 
+        // 循环控制栈，用于处理嵌套循环
+        struct LoopLabels {
+            size_t start;
+            size_t end;
+        };
+        std::vector<LoopLabels> loopStack;
+
       public:
         ASTCodeGen(const std::map<FE::Sym::Entry*, FE::AST::VarAttr>& glbSymbols,
             const std::map<FE::Sym::Entry*, FE::AST::FuncDeclStmt*>&  funcDecls)
@@ -111,7 +118,8 @@ namespace ME
               name2reg(),
               reg2attr(),
               paramPtrTab(),
-              lval2ptr()
+              lval2ptr(),
+              loopStack()
         {}
 
       private:
@@ -225,6 +233,15 @@ namespace ME
         AllocaInst* createAllocaInst(DataType t, size_t ptrReg, std::vector<int> dims);
 
         std::list<Instruction*> createTypeConvertInst(DataType from, DataType to, size_t srcReg);
+
+        // 循环栈管理
+        void pushLoop(size_t start, size_t end) { loopStack.push_back({start, end}); }
+        void popLoop() { loopStack.pop_back(); }
+        LoopLabels getCurrentLoop() { 
+            ASSERT(!loopStack.empty() && "No active loop");
+            return loopStack.back(); 
+        }
+        bool inLoop() { return !loopStack.empty(); }
     };
 }  // namespace ME
 

@@ -23,6 +23,8 @@ namespace ME
         // 创建入口基本块（先创建入口块，再在其中生成参数的 alloca/store）
         Block* entry = createBlock();
         enterBlock(entry);
+        // 为函数建立新的局部符号作用域，避免不同函数之间符号表污染
+        name2reg.enterScope();
 
         // 为形参在函数定义中创建寄存器，并记录映射
         if (node.params)
@@ -30,19 +32,32 @@ namespace ME
             for (auto p : *node.params)
             {
                 DataType at = convert(p->type);
-                if (p->dims) at = DataType::PTR;
+                if (p->dims && !p->dims->empty()) at = DataType::PTR;
                 size_t preg = getNewRegId();
                 // 将参数寄存器加入 FuncDefInst 的 argRegs
                 fdef->argRegs.emplace_back(at, getRegOperand(preg));
                 // 为参数创建本地 alloca，并把参数存入其中，这样变量访问仍使用指针
                 size_t ptrReg = getNewRegId();
-                insert(new AllocaInst(at, getRegOperand(ptrReg)));
+                if (p->dims && !p->dims->empty()) {
+                    std::vector<int> dims;
+                    // 计算维度数量
+                    size_t dimCount = p->dims->size();
+                    for (size_t i = 0; i < dimCount; i++) {
+                        dims.push_back(0); // 占位
+                    }
+                    insert(new AllocaInst(at, getRegOperand(ptrReg), dims));
+                } else {
+                    insert(new AllocaInst(at, getRegOperand(ptrReg)));
+                }
                 insert(createStoreInst(at, preg, getRegOperand(ptrReg)));
 
                 name2reg.addSymbol(p->entry, ptrReg);
                 FE::AST::VarAttr va; va.type = p->type;
+                if (p->dims && !p->dims->empty()) {
+                    va.arrayDims.resize(p->dims->size(), 0);
+                }
                 reg2attr[ptrReg] = va;
-                if (p->dims) paramPtrTab[preg] = true;
+                if (p->dims && !p->dims->empty()) paramPtrTab[preg] = true;
             }
         }
 
@@ -50,13 +65,37 @@ namespace ME
         if (node.body) apply(*this, *node.body, m);
 
         // 如果最后一个基本块没有 terminator，则补上返回指令
-        if (curBlock->insts.empty()|| !curBlock->insts.back()->isTerminator())
+        if (curBlock && (curBlock->insts.empty() || !curBlock->insts.back()->isTerminator()))
         {
             if (retType == DataType::VOID) insert(createRetInst());
             else if (retType == DataType::I32) insert(createRetInst(0));
             else if (retType == DataType::F32) insert(createRetInst(0.0f));
         }
 
+        // 清理每个基本块：若存在多个终结指令或终结指令后还有指令，移除多余部分
+        for (auto& p : curFunc->blocks)
+        {
+            Block* b = p.second;
+            bool seenTerm = false;
+            std::deque<Instruction*> newInsts;
+            for (auto inst : b->insts)
+            {
+                if (!seenTerm)
+                {
+                    newInsts.push_back(inst);
+                    if (inst->isTerminator()) seenTerm = true;
+                }
+                else
+                {
+                    // 多余的指令（包括重复的 terminator），释放以避免内存泄漏
+                    delete inst;
+                }
+            }
+            b->insts = std::move(newInsts);
+        }
+
+        // 退出函数的局部符号作用域
+        name2reg.exitScope();
         exitBlock();
         exitFunc();
     }
@@ -110,39 +149,41 @@ namespace ME
         createBlock();
         size_t endL = getMaxLabel() - 1;
 
+        // 将循环标签压栈
+        pushLoop(condL, endL);
+
         // 跳转到 cond
         insert(createBranchInst(condL));
 
         // cond
         enterBlock(condL);
-        apply(*this, *node.cond, m);
-        size_t condReg = getMaxReg();
-        DataType condType = convert(node.cond->attr.val.value.type);
-        if (condType != DataType::I1) {
-            auto convs = createTypeConvertInst(condType, DataType::I1, condReg);
-            for (auto& inst : convs) insert(inst);
-            condReg = getMaxReg();
+        if (node.cond) {
+            apply(*this, *node.cond, m);
+            size_t condReg = getMaxReg();
+            DataType condType = convert(node.cond->attr.val.value.type);
+            if (condType != DataType::I1) {
+                auto convs = createTypeConvertInst(condType, DataType::I1, condReg);
+                for (auto& inst : convs) insert(inst);
+                condReg = getMaxReg();
+            }
+            insert(createBranchInst(condReg, bodyL, endL));
+        } else {
+            // 无条件循环
+            insert(createBranchInst(bodyL));
         }
-        insert(createBranchInst(condReg, bodyL, endL));
 
         // body
-        // 记录循环标签，支持 break/continue
-        size_t prevLoopStart = curFunc->loopStartLabel;
-        size_t prevLoopEnd = curFunc->loopEndLabel;
-        curFunc->loopStartLabel = condL;
-        curFunc->loopEndLabel = endL;
-
         enterBlock(bodyL);
-        apply(*this, *node.body, m);
+        if (node.body) apply(*this, *node.body, m);
         // 若 body 未以 terminator 结束，则回到 cond
-        if (curBlock->insts.empty() || !curBlock->insts.back()->isTerminator()) insert(createBranchInst(condL));
-
-        // 恢复循环标签
-        curFunc->loopStartLabel = prevLoopStart;
-        curFunc->loopEndLabel = prevLoopEnd;
+        if (curBlock->insts.empty() || !curBlock->insts.back()->isTerminator()) 
+            insert(createBranchInst(condL));
 
         // end
         enterBlock(endL);
+
+        // 弹出循环标签
+        popLoop();
     }
 
     void ASTCodeGen::visit(FE::AST::IfStmt& node, Module* m)
@@ -198,16 +239,18 @@ namespace ME
     {
         (void)node;
         (void)m;
-        if (!curFunc) ERROR("break not in function");
-        insert(createBranchInst(curFunc->loopEndLabel));
+        if (!inLoop()) ERROR("break not in loop");
+        LoopLabels current = getCurrentLoop();
+        insert(createBranchInst(current.end));
     }
 
     void ASTCodeGen::visit(FE::AST::ContinueStmt& node, Module* m)
     {
         (void)node;
         (void)m;
-        if (!curFunc) ERROR("continue not in function");
-        insert(createBranchInst(curFunc->loopStartLabel));
+        if (!inLoop()) ERROR("continue not in loop");
+        LoopLabels current = getCurrentLoop();
+        insert(createBranchInst(current.start));
     }
 
     void ASTCodeGen::visit(FE::AST::ForStmt& node, Module* m)
@@ -224,6 +267,9 @@ namespace ME
         createBlock();
         size_t endL = getMaxLabel() - 1;
 
+        // 将循环标签压栈
+        pushLoop(stepL, endL);
+
         insert(createBranchInst(condL));
 
         // cond
@@ -232,6 +278,12 @@ namespace ME
         {
             apply(*this, *node.cond, m);
             size_t condReg = getMaxReg();
+            DataType condType = convert(node.cond->attr.val.value.type);
+            if (condType != DataType::I1) {
+                auto convs = createTypeConvertInst(condType, DataType::I1, condReg);
+                for (auto& inst : convs) insert(inst);
+                condReg = getMaxReg();
+            }
             insert(createBranchInst(condReg, bodyL, endL));
         }
         else
@@ -241,24 +293,21 @@ namespace ME
         }
 
         // body
-        size_t prevLoopStart = curFunc->loopStartLabel;
-        size_t prevLoopEnd = curFunc->loopEndLabel;
-        curFunc->loopStartLabel = stepL;
-        curFunc->loopEndLabel = endL;
-
         enterBlock(bodyL);
-        apply(*this, *node.body, m);
-        if (!curBlock->insts.empty() && !curBlock->insts.back()->isTerminator()) insert(createBranchInst(stepL));
+        if (node.body) apply(*this, *node.body, m);
+        if (curBlock->insts.empty() || !curBlock->insts.back()->isTerminator()) 
+            insert(createBranchInst(stepL));
 
         // step
         enterBlock(stepL);
         if (node.step) apply(*this, *node.step, m);
         insert(createBranchInst(condL));
 
-        curFunc->loopStartLabel = prevLoopStart;
-        curFunc->loopEndLabel = prevLoopEnd;
-
+        // end
         enterBlock(endL);
+
+        // 弹出循环标签
+        popLoop();
     }
 }  // namespace ME
 

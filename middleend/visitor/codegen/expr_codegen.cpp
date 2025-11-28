@@ -7,44 +7,80 @@ namespace ME
         // 查找变量位置（全局或局部），处理数组下标/GEP，必要时发出 load
         FE::Sym::Entry* entry = node.entry;
 
-        // 首先判断是否为全局变量
-        auto git = glbSymbols.find(entry);
+        // 优先判断局部变量（支持遮蔽），否则使用全局变量
         Operand* basePtr = nullptr;
         DataType baseType = DataType::UNK;
-
-        if (git != glbSymbols.end())
-        {
-            // 全局变量使用 GlobalOperand
-            basePtr = getGlobalOperand(entry->getName());
-            baseType = convert(git->second.type);
-        }
-        else
+        size_t reg = name2reg.getReg(entry);
+        if (reg != static_cast<size_t>(-1))
         {
             // 局部变量：name2reg 存储了指针寄存器
-            size_t reg = name2reg.getReg(entry);
-            if (reg == static_cast<size_t>(-1)) ERROR("Unknown local variable");
             basePtr = getRegOperand(reg);
             auto it = reg2attr.find(reg);
             if (it != reg2attr.end()) baseType = convert(it->second.type);
+        }
+        else
+        {
+            // 全局变量使用 GlobalOperand
+            auto git = glbSymbols.find(entry);
+            if (git != glbSymbols.end())
+            {
+                basePtr = getGlobalOperand(entry->getName());
+                baseType = convert(git->second.type);
+            }
+            else
+            {
+                ERROR("Unknown variable");
+            }
         }
 
         // 处理数组下标：如果有 indices，则生成 GEP
         if (node.indices && !node.indices->empty())
         {
             std::vector<Operand*> idxOps;
+            // 第一个索引是基址偏移，通常为0
+            idxOps.push_back(getImmeI32Operand(0));
             for (auto idxExpr : *node.indices)
             {
                 apply(*this, *idxExpr, m);
-                idxOps.push_back(getRegOperand(getMaxReg()));
+                size_t idxReg = getMaxReg();
+                DataType idxType = convert(idxExpr->attr.val.value.type);
+                if (idxType != DataType::I32) {
+                    auto convs = createTypeConvertInst(idxType, DataType::I32, idxReg);
+                    for (auto& inst : convs) insert(inst);
+                    idxReg = getMaxReg();
+                }
+                idxOps.push_back(getRegOperand(idxReg));
             }
 
             size_t resReg = getNewRegId();
-            auto gep = createGEP_I32Inst(baseType, basePtr, {}, idxOps, resReg);
+            // 对于数组访问，基类型应该是元素类型
+            DataType elemType = baseType;
+            // 如果是多维数组，需要调整类型
+            auto git = glbSymbols.find(entry);
+            if (git != glbSymbols.end() && !git->second.arrayDims.empty()) {
+                // 获取数组元素的基础类型
+                elemType = convert(git->second.type);
+                // 如果是数组类型，转换为对应的指针或元素类型
+                // 这里简化处理，假设都是 I32 类型
+                if (elemType == DataType::PTR) {
+                    elemType = DataType::I32;
+                }
+            } else if (reg != static_cast<size_t>(-1)) {
+                auto rit = reg2attr.find(reg);
+                if (rit != reg2attr.end() && !rit->second.arrayDims.empty()) {
+                    elemType = convert(rit->second.type);
+                    if (elemType == DataType::PTR) {
+                        elemType = DataType::I32;
+                    }
+                }
+            }
+            auto gep = createGEP_I32Inst(elemType, basePtr, {}, idxOps, resReg);
             insert(gep);
             lval2ptr[&node] = getRegOperand(resReg);
+            
             // 始终生成 load，以便表达式求值产生值寄存器
             size_t valReg = getNewRegId();
-            auto ld = createLoadInst(baseType, getRegOperand(resReg), valReg);
+            auto ld = createLoadInst(elemType, getRegOperand(resReg), valReg);
             insert(ld);
         }
         else
@@ -63,10 +99,16 @@ namespace ME
         (void)m;
 
         size_t reg = getNewRegId();
-        switch (node.literal.type->getBaseType())
+        // 根据字面量的基础类型进行处理
+        FE::AST::Type* literalType = node.literal.type;
+        
+        // 使用 getBaseType() 方法获取基础类型枚举值
+        FE::AST::Type_t baseType = literalType->getBaseType();
+        switch (baseType)
         {
             case FE::AST::Type_t::INT:
             case FE::AST::Type_t::LL:  // treat as I32
+            case FE::AST::Type_t::BOOL:
             {
                 int             val  = node.literal.getInt();
                 ArithmeticInst* inst = createArithmeticI32Inst_ImmeAll(Operator::ADD, val, 0, reg);  // reg = val + 0
@@ -80,7 +122,8 @@ namespace ME
                 insert(inst);
                 break;
             }
-            default: ERROR("Unsupported literal type");
+            default: 
+                ERROR("Unsupported literal type: %d", static_cast<int>(baseType));
         }
     }
 
@@ -98,16 +141,17 @@ namespace ME
 
         // 确定目标类型
         DataType toType = DataType::UNK;
-        auto git = glbSymbols.find(lhs.entry);
-        if (git != glbSymbols.end()) toType = convert(git->second.type);
+        // 优先使用局部变量类型（若存在），否则查找全局
+        size_t preg = name2reg.getReg(lhs.entry);
+        if (preg != static_cast<size_t>(-1))
+        {
+            auto rit = reg2attr.find(preg);
+            if (rit != reg2attr.end()) toType = convert(rit->second.type);
+        }
         else
         {
-            size_t preg = name2reg.getReg(lhs.entry);
-            if (preg != static_cast<size_t>(-1))
-            {
-                auto rit = reg2attr.find(preg);
-                if (rit != reg2attr.end()) toType = convert(rit->second.type);
-            }
+            auto git = glbSymbols.find(lhs.entry);
+            if (git != glbSymbols.end()) toType = convert(git->second.type);
         }
 
         DataType fromType = convert(rhs.attr.val.value.type);
@@ -125,128 +169,129 @@ namespace ME
 
         // 发出 store
         insert(createStoreInst(toType, rhsReg, ptr));
+        
+        // 赋值表达式的结果是右值，需要重新加载
+        size_t resultReg = getNewRegId();
+        insert(createLoadInst(toType, ptr, resultReg));
     }
     void ASTCodeGen::handleLogicalAnd(
         FE::AST::BinaryExpr& node, FE::AST::ExprNode& lhs, FE::AST::ExprNode& rhs, Module* m)
     {
         (void)node;
-        // 短路与: if lhs then val=rhs else val=0
-        size_t rhsLabel, falseLabel, endLabel;
-
-        // create blocks
-        createBlock();
-        rhsLabel = getMaxLabel() - 1;
-        createBlock();
-        falseLabel = getMaxLabel() - 1;
-        createBlock();
-        endLabel = getMaxLabel() - 1;
-
-        // 评估 lhs
+        // 使用临时内存实现短路与：避免 PHI 相关问题
+        // 评估 lhs 并归一为 i1
         apply(*this, lhs, m);
         size_t lhsReg = getMaxReg();
-        DataType lhsType = convert(lhs.attr.val.value.type);        
+        DataType lhsType = convert(lhs.attr.val.value.type);
         size_t lhsBool;
-        if (lhsType == DataType::I1) {
-            // 直接用，不需要再做icmp
+        if (lhsType == DataType::I1)
             lhsBool = lhsReg;
-        } else{
-            // 需要icmp
+        else
+        {
             lhsBool = getNewRegId();
             IcmpInst* icmp = createIcmpInst_ImmeRight(ICmpOp::NE, lhsReg, 0, lhsBool);
             insert(icmp);
         }
-        // make branch
+
+        // 在当前函数中分配一个临时 i32 用于保存结果（0/1）
+        size_t tmpPtr = getNewRegId();
+        insert(new AllocaInst(DataType::I32, getRegOperand(tmpPtr)));
+
+        // 创建块：rhs, false, end（在评估 lhs 后创建，避免标签错位）
+        createBlock();
+        size_t rhsLabel = getMaxLabel() - 1;
+        createBlock();
+        size_t falseLabel = getMaxLabel() - 1;
+        createBlock();
+        size_t endLabel = getMaxLabel() - 1;
+
+        // 根据 lhs 分支
         insert(createBranchInst(lhsBool, rhsLabel, falseLabel));
 
-        // rhs block
+        // rhs 分支：计算 rhs 并将其转换为 i32 存入 tmp
         enterBlock(rhsLabel);
         apply(*this, rhs, m);
         size_t rhsReg = getMaxReg();
-        // convert rhs to i1 if needed
         DataType rhsType = convert(rhs.attr.val.value.type);
-        size_t rhsBool;
-        if (rhsType == DataType::I1) {
-            // 直接用，不需要再做icmp
-            rhsBool = rhsReg;
-        } else {
-            // 需要icmp
-            rhsBool = getNewRegId();
-            IcmpInst* icmp = createIcmpInst_ImmeRight(ICmpOp::NE, rhsReg, 0, rhsBool);
-            insert(icmp);
+        if (rhsType != DataType::I32)
+        {
+            auto convs = createTypeConvertInst(rhsType, DataType::I32, rhsReg);
+            for (auto& c : convs) insert(c);
+            rhsReg = getMaxReg();
         }
+        insert(createStoreInst(DataType::I32, getRegOperand(rhsReg), getRegOperand(tmpPtr)));
         insert(createBranchInst(endLabel));
 
-        // false block
+        // false 分支：写入 0
         enterBlock(falseLabel);
-        // result false -> 0 (handled in phi incoming)
+        insert(createStoreInst(DataType::I32, getImmeI32Operand(0), getRegOperand(tmpPtr)));
         insert(createBranchInst(endLabel));
 
-        // end block: phi
+        // end：加载 tmp 并转换为 i1 作为表达式值
         enterBlock(endLabel);
-        size_t dest = getNewRegId();
-        PhiInst* phi = new PhiInst(DataType::I1, getRegOperand(dest));
-        // incoming from rhsB is rhsBool, from falseB is 0
-        phi->addIncoming(getRegOperand(rhsBool), getLabelOperand(rhsLabel));
-        phi->addIncoming(getImmeI32Operand(0), getLabelOperand(falseLabel));
-        insert(phi);
+        size_t loadReg = getNewRegId();
+        insert(createLoadInst(DataType::I32, getRegOperand(tmpPtr), loadReg));
+        auto convs = createTypeConvertInst(DataType::I32, DataType::I1, loadReg);
+        for (auto& c : convs) insert(c);
     }
     void ASTCodeGen::handleLogicalOr(
         FE::AST::BinaryExpr& node, FE::AST::ExprNode& lhs, FE::AST::ExprNode& rhs, Module* m)
     {
         (void)node;
-        // 短路或: if lhs then val=1 else val=rhs
-        size_t rhsLabel, trueLabel, endLabel;
-
-        createBlock();
-        trueLabel = getMaxLabel() - 1;
-        createBlock();
-        rhsLabel = getMaxLabel() - 1;
-        createBlock();
-        endLabel = getMaxLabel() - 1;
-
+        // 使用临时内存实现短路或：如果 lhs 为真，结果为 1；否则为 rhs
         apply(*this, lhs, m);
         size_t lhsReg = getMaxReg();
         DataType lhsType = convert(lhs.attr.val.value.type);
         size_t lhsBool;
-        if (lhsType == DataType::I1) {
-            // 直接用，不需要再做icmp
+        if (lhsType == DataType::I1)
             lhsBool = lhsReg;
-        } else {
-            // 需要icmp
+        else
+        {
             lhsBool = getNewRegId();
             IcmpInst* icmp = createIcmpInst_ImmeRight(ICmpOp::NE, lhsReg, 0, lhsBool);
             insert(icmp);
         }
+
+        // 分配临时 i32
+        size_t tmpPtr = getNewRegId();
+        insert(new AllocaInst(DataType::I32, getRegOperand(tmpPtr)));
+
+        // 创建块
+        createBlock();
+        size_t trueLabel = getMaxLabel() - 1;
+        createBlock();
+        size_t rhsLabel = getMaxLabel() - 1;
+        createBlock();
+        size_t endLabel = getMaxLabel() - 1;
+
+        // 根据 lhs 分支
         insert(createBranchInst(lhsBool, trueLabel, rhsLabel));
-        
-        // true block
+
+        // true: 写入 1
         enterBlock(trueLabel);
+        insert(createStoreInst(DataType::I32, getImmeI32Operand(1), getRegOperand(tmpPtr)));
         insert(createBranchInst(endLabel));
 
-        // rhs block
+        // rhs: evaluate rhs, convert to i32, store
         enterBlock(rhsLabel);
         apply(*this, rhs, m);
-        DataType rhsType = convert(rhs.attr.val.value.type);
         size_t rhsReg = getMaxReg();
-        size_t rhsBool;
-        if (rhsType == DataType::I1) {
-            // 直接用，不需要再做icmp
-            rhsBool = rhsReg;
-        } else {
-            // 需要icmp
-            rhsBool = getNewRegId();
-            IcmpInst* icmp = createIcmpInst_ImmeRight(ICmpOp::NE, rhsReg, 0, rhsBool);
-            insert(icmp);
+        DataType rhsType = convert(rhs.attr.val.value.type);
+        if (rhsType != DataType::I32)
+        {
+            auto convs = createTypeConvertInst(rhsType, DataType::I32, rhsReg);
+            for (auto& c : convs) insert(c);
+            rhsReg = getMaxReg();
         }
+        insert(createStoreInst(DataType::I32, getRegOperand(rhsReg), getRegOperand(tmpPtr)));
         insert(createBranchInst(endLabel));
 
-        // end block: phi
+        // end: load tmp, convert to i1
         enterBlock(endLabel);
-        size_t dest = getNewRegId();
-        PhiInst* phi = new PhiInst(DataType::I1, getRegOperand(dest));
-        phi->addIncoming(getImmeI32Operand(1), getLabelOperand(trueLabel));
-        phi->addIncoming(getRegOperand(rhsBool), getLabelOperand(rhsLabel));
-        insert(phi);
+        size_t loadReg = getNewRegId();
+        insert(createLoadInst(DataType::I32, getRegOperand(tmpPtr), loadReg));
+        auto convs = createTypeConvertInst(DataType::I32, DataType::I1, loadReg);
+        for (auto& c : convs) insert(c);
     }
     void ASTCodeGen::visit(FE::AST::BinaryExpr& node, Module* m)
     {
@@ -335,6 +380,8 @@ namespace ME
         {
             apply(*this, *e, m);
         }
+        // 逗号表达式的结果是最后一个表达式的值
+        // 不需要额外处理，因为最后一个表达式的结果已经在寄存器中
     }
 
 }  // namespace ME

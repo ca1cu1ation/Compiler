@@ -56,19 +56,33 @@ namespace ME
 
             // 为该变量分配指针寄存器
             size_t ptrReg = getNewRegId();
+
+            // 将 alloca 指令插入到入口块的前端，避免在循环中重复分配导致栈溢出
+            Block* entryBlock = curFunc->getBlock(0);
+
             if (lval->indices && !lval->indices->empty())
             {
                 std::vector<int> dims;
-                insert(new AllocaInst(dt, getRegOperand(ptrReg), dims));
+                // 处理数组维度 - 计算维度数量
+                size_t dimCount = lval->indices->size();
+                for (size_t i = 0; i < dimCount; i++) {
+                    dims.push_back(0); // 占位，实际维度由类型决定
+                }
+                entryBlock->insertFront(new AllocaInst(dt, getRegOperand(ptrReg), dims));
             }
             else
             {
-                insert(new AllocaInst(dt, getRegOperand(ptrReg)));
+                entryBlock->insertFront(new AllocaInst(dt, getRegOperand(ptrReg)));
             }
 
             name2reg.addSymbol(entry, ptrReg);
             FE::AST::VarAttr attr;
             attr.type = node.type;
+            if (lval->indices && !lval->indices->empty()) {
+                // 设置数组维度属性
+                size_t dimCount = lval->indices->size();
+                attr.arrayDims.resize(dimCount, 0);
+            }
             reg2attr[ptrReg] = attr;
 
             // 如果之前计算了初始化值，则将其存入新分配的地址

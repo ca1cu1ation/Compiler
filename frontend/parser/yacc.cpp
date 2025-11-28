@@ -1228,7 +1228,7 @@ namespace  FE  {
   case 22: // FUNC_BODY: LBRACE RBRACE
 #line 227 "frontend/parser/yacc.y"
                   {
-        yylhs.value.as < FE::AST::StmtNode* > () = nullptr;
+        yylhs.value.as < FE::AST::StmtNode* > () = new BlockStmt(new std::vector<StmtNode*>(), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
 #line 1234 "frontend/parser/yacc.cpp"
     break;
@@ -1236,292 +1236,274 @@ namespace  FE  {
   case 23: // FUNC_BODY: LBRACE STMT_LIST RBRACE
 #line 230 "frontend/parser/yacc.y"
                               {
-        if (!yystack_[1].value.as < std::vector<FE::AST::StmtNode*>* > () || yystack_[1].value.as < std::vector<FE::AST::StmtNode*>* > ()->empty())
-        {
-            yylhs.value.as < FE::AST::StmtNode* > () = nullptr;
-            delete yystack_[1].value.as < std::vector<FE::AST::StmtNode*>* > ();
-        }
-        else if (yystack_[1].value.as < std::vector<FE::AST::StmtNode*>* > ()->size() == 1)
-        {
-            yylhs.value.as < FE::AST::StmtNode* > () = (*yystack_[1].value.as < std::vector<FE::AST::StmtNode*>* > ())[0];
-            delete yystack_[1].value.as < std::vector<FE::AST::StmtNode*>* > ();
-        }
-        else yylhs.value.as < FE::AST::StmtNode* > () = new BlockStmt(yystack_[1].value.as < std::vector<FE::AST::StmtNode*>* > (), yystack_[2].location.begin.line, yystack_[2].location.begin.column);
+        yylhs.value.as < FE::AST::StmtNode* > () = new BlockStmt(yystack_[1].value.as < std::vector<FE::AST::StmtNode*>* > (), yystack_[2].location.begin.line, yystack_[2].location.begin.column);
     }
-#line 1252 "frontend/parser/yacc.cpp"
+#line 1242 "frontend/parser/yacc.cpp"
     break;
 
   case 24: // FUNC_DECL_STMT: TYPE IDENT LPAREN PARAM_DECLARATOR_LIST RPAREN FUNC_BODY
-#line 246 "frontend/parser/yacc.y"
+#line 236 "frontend/parser/yacc.y"
                                                              {
         Entry* entry = Entry::getEntry(yystack_[4].value.as < std::string > ());
         yylhs.value.as < FE::AST::StmtNode* > () = new FuncDeclStmt(yystack_[5].value.as < FE::AST::Type* > (), entry, yystack_[2].value.as < std::vector<FE::AST::ParamDeclarator*>* > (), yystack_[0].value.as < FE::AST::StmtNode* > (), yystack_[5].location.begin.line, yystack_[5].location.begin.column);
     }
-#line 1261 "frontend/parser/yacc.cpp"
+#line 1251 "frontend/parser/yacc.cpp"
     break;
 
   case 25: // FOR_STMT: FOR LPAREN VAR_DECLARATION SEMICOLON EXPR SEMICOLON EXPR RPAREN STMT
-#line 253 "frontend/parser/yacc.y"
+#line 243 "frontend/parser/yacc.y"
                                                                          {
         VarDeclStmt* initStmt = new VarDeclStmt(yystack_[6].value.as < FE::AST::VarDeclaration* > (), yystack_[6].location.begin.line, yystack_[6].location.begin.column);
         yylhs.value.as < FE::AST::StmtNode* > () = new ForStmt(initStmt, yystack_[4].value.as < FE::AST::ExprNode* > (), yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::StmtNode* > (), yystack_[8].location.begin.line, yystack_[8].location.begin.column);
     }
-#line 1270 "frontend/parser/yacc.cpp"
+#line 1260 "frontend/parser/yacc.cpp"
     break;
 
   case 26: // FOR_STMT: FOR LPAREN EXPR SEMICOLON EXPR SEMICOLON EXPR RPAREN STMT
-#line 257 "frontend/parser/yacc.y"
+#line 247 "frontend/parser/yacc.y"
                                                                 {
         StmtNode* initStmt = new ExprStmt(yystack_[6].value.as < FE::AST::ExprNode* > (), yystack_[6].value.as < FE::AST::ExprNode* > ()->line_num, yystack_[6].value.as < FE::AST::ExprNode* > ()->col_num);
         yylhs.value.as < FE::AST::StmtNode* > () = new ForStmt(initStmt, yystack_[4].value.as < FE::AST::ExprNode* > (), yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::StmtNode* > (), yystack_[8].location.begin.line, yystack_[8].location.begin.column);
     }
-#line 1279 "frontend/parser/yacc.cpp"
+#line 1269 "frontend/parser/yacc.cpp"
     break;
 
   case 27: // IF_STMT: IF LPAREN EXPR RPAREN STMT
-#line 265 "frontend/parser/yacc.y"
+#line 255 "frontend/parser/yacc.y"
                                            {
         yylhs.value.as < FE::AST::StmtNode* > () = new IfStmt(yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::StmtNode* > (), nullptr, yystack_[4].location.begin.line, yystack_[4].location.begin.column);
     }
-#line 1287 "frontend/parser/yacc.cpp"
+#line 1277 "frontend/parser/yacc.cpp"
     break;
 
   case 28: // IF_STMT: IF LPAREN EXPR RPAREN STMT ELSE STMT
-#line 268 "frontend/parser/yacc.y"
+#line 258 "frontend/parser/yacc.y"
                                            {
         yylhs.value.as < FE::AST::StmtNode* > () = new IfStmt(yystack_[4].value.as < FE::AST::ExprNode* > (), yystack_[2].value.as < FE::AST::StmtNode* > (), yystack_[0].value.as < FE::AST::StmtNode* > (), yystack_[6].location.begin.line, yystack_[6].location.begin.column);
     }
-#line 1295 "frontend/parser/yacc.cpp"
+#line 1285 "frontend/parser/yacc.cpp"
     break;
 
   case 29: // RETURN_STMT: RETURN SEMICOLON
-#line 276 "frontend/parser/yacc.y"
+#line 266 "frontend/parser/yacc.y"
                      {
         yylhs.value.as < FE::AST::StmtNode* > () = new ReturnStmt(nullptr, yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1303 "frontend/parser/yacc.cpp"
+#line 1293 "frontend/parser/yacc.cpp"
     break;
 
   case 30: // RETURN_STMT: RETURN EXPR SEMICOLON
-#line 279 "frontend/parser/yacc.y"
+#line 269 "frontend/parser/yacc.y"
                             {
         yylhs.value.as < FE::AST::StmtNode* > () = new ReturnStmt(yystack_[1].value.as < FE::AST::ExprNode* > (), yystack_[2].location.begin.line, yystack_[2].location.begin.column);
     }
-#line 1311 "frontend/parser/yacc.cpp"
+#line 1301 "frontend/parser/yacc.cpp"
     break;
 
   case 31: // WHILE_STMT: WHILE LPAREN EXPR RPAREN STMT
-#line 285 "frontend/parser/yacc.y"
+#line 275 "frontend/parser/yacc.y"
                                   {
         yylhs.value.as < FE::AST::StmtNode* > () = new WhileStmt(yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::StmtNode* > (), yystack_[4].location.begin.line, yystack_[4].location.begin.column);
     }
-#line 1319 "frontend/parser/yacc.cpp"
+#line 1309 "frontend/parser/yacc.cpp"
     break;
 
   case 32: // BLOCK_STMT: LBRACE RBRACE
-#line 291 "frontend/parser/yacc.y"
+#line 281 "frontend/parser/yacc.y"
                   {
-        yylhs.value.as < FE::AST::StmtNode* > () = nullptr;
+        yylhs.value.as < FE::AST::StmtNode* > () = new BlockStmt(new std::vector<StmtNode*>(), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1327 "frontend/parser/yacc.cpp"
+#line 1317 "frontend/parser/yacc.cpp"
     break;
 
   case 33: // BLOCK_STMT: LBRACE STMT_LIST RBRACE
-#line 294 "frontend/parser/yacc.y"
+#line 284 "frontend/parser/yacc.y"
                               {
-        if (!yystack_[1].value.as < std::vector<FE::AST::StmtNode*>* > () || yystack_[1].value.as < std::vector<FE::AST::StmtNode*>* > ()->empty()) {
-            yylhs.value.as < FE::AST::StmtNode* > () = nullptr;
-            delete yystack_[1].value.as < std::vector<FE::AST::StmtNode*>* > ();
-        } else if (yystack_[1].value.as < std::vector<FE::AST::StmtNode*>* > ()->size() == 1) {
-            yylhs.value.as < FE::AST::StmtNode* > () = (*yystack_[1].value.as < std::vector<FE::AST::StmtNode*>* > ())[0];
-            delete yystack_[1].value.as < std::vector<FE::AST::StmtNode*>* > ();
-        } else {
-            yylhs.value.as < FE::AST::StmtNode* > () = new BlockStmt(yystack_[1].value.as < std::vector<FE::AST::StmtNode*>* > (), yystack_[2].location.begin.line, yystack_[2].location.begin.column);
-        }
+        yylhs.value.as < FE::AST::StmtNode* > () = new BlockStmt(yystack_[1].value.as < std::vector<FE::AST::StmtNode*>* > (), yystack_[2].location.begin.line, yystack_[2].location.begin.column);
     }
-#line 1343 "frontend/parser/yacc.cpp"
+#line 1325 "frontend/parser/yacc.cpp"
     break;
 
   case 34: // PARAM_DECLARATOR: TYPE IDENT
-#line 309 "frontend/parser/yacc.y"
+#line 291 "frontend/parser/yacc.y"
                {
         Entry* entry = Entry::getEntry(yystack_[0].value.as < std::string > ());
         yylhs.value.as < FE::AST::ParamDeclarator* > () = new ParamDeclarator(yystack_[1].value.as < FE::AST::Type* > (), entry, nullptr, yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1352 "frontend/parser/yacc.cpp"
+#line 1334 "frontend/parser/yacc.cpp"
     break;
 
   case 35: // PARAM_DECLARATOR: TYPE IDENT LBRACKET RBRACKET
-#line 313 "frontend/parser/yacc.y"
+#line 295 "frontend/parser/yacc.y"
                                    {
         std::vector<ExprNode*>* dim = new std::vector<ExprNode*>();
         dim->emplace_back(new LiteralExpr(-1, yystack_[1].location.begin.line, yystack_[1].location.begin.column));
         Entry* entry = Entry::getEntry(yystack_[2].value.as < std::string > ());
         yylhs.value.as < FE::AST::ParamDeclarator* > () = new ParamDeclarator(yystack_[3].value.as < FE::AST::Type* > (), entry, dim, yystack_[3].location.begin.line, yystack_[3].location.begin.column);
     }
-#line 1363 "frontend/parser/yacc.cpp"
+#line 1345 "frontend/parser/yacc.cpp"
     break;
 
   case 36: // PARAM_DECLARATOR: TYPE IDENT ARRAY_DIMENSION_EXPR_LIST
-#line 320 "frontend/parser/yacc.y"
+#line 302 "frontend/parser/yacc.y"
                                           {
         std::vector<ExprNode*>* dim = yystack_[0].value.as < std::vector<FE::AST::ExprNode*>* > ();
         Entry* entry = Entry::getEntry(yystack_[1].value.as < std::string > ());
         yylhs.value.as < FE::AST::ParamDeclarator* > () = new ParamDeclarator(yystack_[2].value.as < FE::AST::Type* > (), entry, dim, yystack_[2].location.begin.line, yystack_[2].location.begin.column);
     }
-#line 1373 "frontend/parser/yacc.cpp"
+#line 1355 "frontend/parser/yacc.cpp"
     break;
 
   case 37: // PARAM_DECLARATOR: TYPE IDENT LBRACKET RBRACKET ARRAY_DIMENSION_EXPR_LIST
-#line 325 "frontend/parser/yacc.y"
+#line 307 "frontend/parser/yacc.y"
                                                             {
         std::vector<ExprNode*>* dim = yystack_[0].value.as < std::vector<FE::AST::ExprNode*>* > ();
         dim->insert(dim->begin(), new LiteralExpr(-1, yystack_[2].location.begin.line, yystack_[2].location.begin.column));
         Entry* entry = Entry::getEntry(yystack_[3].value.as < std::string > ());
         yylhs.value.as < FE::AST::ParamDeclarator* > () = new ParamDeclarator(yystack_[4].value.as < FE::AST::Type* > (), entry, dim, yystack_[4].location.begin.line, yystack_[4].location.begin.column);
     }
-#line 1384 "frontend/parser/yacc.cpp"
+#line 1366 "frontend/parser/yacc.cpp"
     break;
 
   case 38: // PARAM_DECLARATOR_LIST: %empty
-#line 334 "frontend/parser/yacc.y"
+#line 316 "frontend/parser/yacc.y"
                 {
         yylhs.value.as < std::vector<FE::AST::ParamDeclarator*>* > () = new std::vector<ParamDeclarator*>();
     }
-#line 1392 "frontend/parser/yacc.cpp"
+#line 1374 "frontend/parser/yacc.cpp"
     break;
 
   case 39: // PARAM_DECLARATOR_LIST: PARAM_DECLARATOR
-#line 338 "frontend/parser/yacc.y"
+#line 320 "frontend/parser/yacc.y"
                        {
         yylhs.value.as < std::vector<FE::AST::ParamDeclarator*>* > () = new std::vector<ParamDeclarator*>();
         yylhs.value.as < std::vector<FE::AST::ParamDeclarator*>* > ()->push_back(yystack_[0].value.as < FE::AST::ParamDeclarator* > ());
     }
-#line 1401 "frontend/parser/yacc.cpp"
+#line 1383 "frontend/parser/yacc.cpp"
     break;
 
   case 40: // PARAM_DECLARATOR_LIST: PARAM_DECLARATOR_LIST COMMA PARAM_DECLARATOR
-#line 342 "frontend/parser/yacc.y"
+#line 324 "frontend/parser/yacc.y"
                                                    {
         yylhs.value.as < std::vector<FE::AST::ParamDeclarator*>* > () = yystack_[2].value.as < std::vector<FE::AST::ParamDeclarator*>* > ();
         yylhs.value.as < std::vector<FE::AST::ParamDeclarator*>* > ()->push_back(yystack_[0].value.as < FE::AST::ParamDeclarator* > ());
     }
-#line 1410 "frontend/parser/yacc.cpp"
+#line 1392 "frontend/parser/yacc.cpp"
     break;
 
   case 41: // VAR_DECLARATOR: LEFT_VAL_EXPR
-#line 350 "frontend/parser/yacc.y"
+#line 332 "frontend/parser/yacc.y"
                   {
         yylhs.value.as < FE::AST::VarDeclarator* > () = new VarDeclarator(yystack_[0].value.as < FE::AST::ExprNode* > (), nullptr, yystack_[0].location.begin.line, yystack_[0].location.begin.column);
     }
-#line 1418 "frontend/parser/yacc.cpp"
+#line 1400 "frontend/parser/yacc.cpp"
     break;
 
   case 42: // VAR_DECLARATOR: LEFT_VAL_EXPR ASSIGN INITIALIZER
-#line 353 "frontend/parser/yacc.y"
+#line 335 "frontend/parser/yacc.y"
                                        {
         yylhs.value.as < FE::AST::VarDeclarator* > () = new VarDeclarator(yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::InitDecl* > (), yystack_[2].location.begin.line, yystack_[2].location.begin.column);
     }
-#line 1426 "frontend/parser/yacc.cpp"
+#line 1408 "frontend/parser/yacc.cpp"
     break;
 
   case 43: // VAR_DECLARATOR_LIST: VAR_DECLARATOR
-#line 359 "frontend/parser/yacc.y"
+#line 341 "frontend/parser/yacc.y"
                    {
         yylhs.value.as < std::vector<FE::AST::VarDeclarator*>* > () = new std::vector<VarDeclarator*>();
         yylhs.value.as < std::vector<FE::AST::VarDeclarator*>* > ()->push_back(yystack_[0].value.as < FE::AST::VarDeclarator* > ());
     }
-#line 1435 "frontend/parser/yacc.cpp"
+#line 1417 "frontend/parser/yacc.cpp"
     break;
 
   case 44: // VAR_DECLARATOR_LIST: VAR_DECLARATOR_LIST COMMA VAR_DECLARATOR
-#line 363 "frontend/parser/yacc.y"
+#line 345 "frontend/parser/yacc.y"
                                                {
         yylhs.value.as < std::vector<FE::AST::VarDeclarator*>* > () = yystack_[2].value.as < std::vector<FE::AST::VarDeclarator*>* > ();
         yylhs.value.as < std::vector<FE::AST::VarDeclarator*>* > ()->push_back(yystack_[0].value.as < FE::AST::VarDeclarator* > ());
     }
-#line 1444 "frontend/parser/yacc.cpp"
+#line 1426 "frontend/parser/yacc.cpp"
     break;
 
   case 45: // INITIALIZER: NOCOMMA_EXPR
-#line 371 "frontend/parser/yacc.y"
+#line 353 "frontend/parser/yacc.y"
                  {
         yylhs.value.as < FE::AST::InitDecl* > () = new Initializer(yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[0].location.begin.line, yystack_[0].location.begin.column);
     }
-#line 1452 "frontend/parser/yacc.cpp"
+#line 1434 "frontend/parser/yacc.cpp"
     break;
 
   case 46: // INITIALIZER: LBRACE RBRACE
-#line 374 "frontend/parser/yacc.y"
+#line 356 "frontend/parser/yacc.y"
                     {
         std::vector<InitDecl*>* initList = new std::vector<InitDecl*>();
         yylhs.value.as < FE::AST::InitDecl* > () = new InitializerList(initList, yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1461 "frontend/parser/yacc.cpp"
+#line 1443 "frontend/parser/yacc.cpp"
     break;
 
   case 47: // INITIALIZER: LBRACE INITIALIZER_LIST RBRACE
-#line 378 "frontend/parser/yacc.y"
+#line 360 "frontend/parser/yacc.y"
                                      {
         yylhs.value.as < FE::AST::InitDecl* > () = new InitializerList(yystack_[1].value.as < std::vector<FE::AST::InitDecl*>* > (), yystack_[2].location.begin.line, yystack_[2].location.begin.column);
     }
-#line 1469 "frontend/parser/yacc.cpp"
+#line 1451 "frontend/parser/yacc.cpp"
     break;
 
   case 48: // INITIALIZER_LIST: INITIALIZER
-#line 383 "frontend/parser/yacc.y"
+#line 365 "frontend/parser/yacc.y"
                 {
         yylhs.value.as < std::vector<FE::AST::InitDecl*>* > () = new std::vector<InitDecl*>();
         yylhs.value.as < std::vector<FE::AST::InitDecl*>* > ()->push_back(yystack_[0].value.as < FE::AST::InitDecl* > ());
     }
-#line 1478 "frontend/parser/yacc.cpp"
+#line 1460 "frontend/parser/yacc.cpp"
     break;
 
   case 49: // INITIALIZER_LIST: INITIALIZER_LIST COMMA INITIALIZER
-#line 387 "frontend/parser/yacc.y"
+#line 369 "frontend/parser/yacc.y"
                                          {
         yylhs.value.as < std::vector<FE::AST::InitDecl*>* > () = yystack_[2].value.as < std::vector<FE::AST::InitDecl*>* > ();
         yylhs.value.as < std::vector<FE::AST::InitDecl*>* > ()->push_back(yystack_[0].value.as < FE::AST::InitDecl* > ());
     }
-#line 1487 "frontend/parser/yacc.cpp"
+#line 1469 "frontend/parser/yacc.cpp"
     break;
 
   case 50: // ASSIGN_EXPR: LEFT_VAL_EXPR ASSIGN EXPR
-#line 395 "frontend/parser/yacc.y"
+#line 377 "frontend/parser/yacc.y"
                               {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::ASSIGN, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1495 "frontend/parser/yacc.cpp"
+#line 1477 "frontend/parser/yacc.cpp"
     break;
 
   case 51: // EXPR_LIST: NOCOMMA_EXPR
-#line 401 "frontend/parser/yacc.y"
+#line 383 "frontend/parser/yacc.y"
                  {
         yylhs.value.as < std::vector<FE::AST::ExprNode*>* > () = new std::vector<ExprNode*>();
         yylhs.value.as < std::vector<FE::AST::ExprNode*>* > ()->push_back(yystack_[0].value.as < FE::AST::ExprNode* > ());
     }
-#line 1504 "frontend/parser/yacc.cpp"
+#line 1486 "frontend/parser/yacc.cpp"
     break;
 
   case 52: // EXPR_LIST: EXPR_LIST COMMA NOCOMMA_EXPR
-#line 405 "frontend/parser/yacc.y"
+#line 387 "frontend/parser/yacc.y"
                                    {
         yylhs.value.as < std::vector<FE::AST::ExprNode*>* > () = yystack_[2].value.as < std::vector<FE::AST::ExprNode*>* > ();
         yylhs.value.as < std::vector<FE::AST::ExprNode*>* > ()->push_back(yystack_[0].value.as < FE::AST::ExprNode* > ());
     }
-#line 1513 "frontend/parser/yacc.cpp"
+#line 1495 "frontend/parser/yacc.cpp"
     break;
 
   case 53: // EXPR: NOCOMMA_EXPR
-#line 412 "frontend/parser/yacc.y"
+#line 394 "frontend/parser/yacc.y"
                  {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1521 "frontend/parser/yacc.cpp"
+#line 1503 "frontend/parser/yacc.cpp"
     break;
 
   case 54: // EXPR: EXPR COMMA NOCOMMA_EXPR
-#line 415 "frontend/parser/yacc.y"
+#line 397 "frontend/parser/yacc.y"
                               {
         if (yystack_[2].value.as < FE::AST::ExprNode* > ()->isCommaExpr()) {
             CommaExpr* ce = static_cast<CommaExpr*>(yystack_[2].value.as < FE::AST::ExprNode* > ());
@@ -1534,259 +1516,259 @@ namespace  FE  {
             yylhs.value.as < FE::AST::ExprNode* > () = new CommaExpr(vec, yystack_[2].value.as < FE::AST::ExprNode* > ()->line_num, yystack_[2].value.as < FE::AST::ExprNode* > ()->col_num);
         }
     }
-#line 1538 "frontend/parser/yacc.cpp"
+#line 1520 "frontend/parser/yacc.cpp"
     break;
 
   case 55: // NOCOMMA_EXPR: LOGICAL_OR_EXPR
-#line 430 "frontend/parser/yacc.y"
+#line 412 "frontend/parser/yacc.y"
                     {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1546 "frontend/parser/yacc.cpp"
+#line 1528 "frontend/parser/yacc.cpp"
     break;
 
   case 56: // NOCOMMA_EXPR: ASSIGN_EXPR
-#line 433 "frontend/parser/yacc.y"
+#line 415 "frontend/parser/yacc.y"
                   {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1554 "frontend/parser/yacc.cpp"
+#line 1536 "frontend/parser/yacc.cpp"
     break;
 
   case 57: // LOGICAL_OR_EXPR: LOGICAL_AND_EXPR
-#line 440 "frontend/parser/yacc.y"
+#line 422 "frontend/parser/yacc.y"
                      {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1562 "frontend/parser/yacc.cpp"
+#line 1544 "frontend/parser/yacc.cpp"
     break;
 
   case 58: // LOGICAL_OR_EXPR: LOGICAL_OR_EXPR OR LOGICAL_AND_EXPR
-#line 443 "frontend/parser/yacc.y"
+#line 425 "frontend/parser/yacc.y"
                                           {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::OR, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1570 "frontend/parser/yacc.cpp"
+#line 1552 "frontend/parser/yacc.cpp"
     break;
 
   case 59: // LOGICAL_AND_EXPR: EQUALITY_EXPR
-#line 449 "frontend/parser/yacc.y"
+#line 431 "frontend/parser/yacc.y"
                   {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1578 "frontend/parser/yacc.cpp"
+#line 1560 "frontend/parser/yacc.cpp"
     break;
 
   case 60: // LOGICAL_AND_EXPR: LOGICAL_AND_EXPR AND BITOR_EXPR
-#line 452 "frontend/parser/yacc.y"
+#line 434 "frontend/parser/yacc.y"
                                       {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::AND, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1586 "frontend/parser/yacc.cpp"
+#line 1568 "frontend/parser/yacc.cpp"
     break;
 
   case 61: // BITOR_EXPR: BITAND_EXPR
-#line 457 "frontend/parser/yacc.y"
+#line 439 "frontend/parser/yacc.y"
                 {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1594 "frontend/parser/yacc.cpp"
+#line 1576 "frontend/parser/yacc.cpp"
     break;
 
   case 62: // BITOR_EXPR: BITOR_EXPR BITOR BITAND_EXPR
-#line 460 "frontend/parser/yacc.y"
+#line 442 "frontend/parser/yacc.y"
                                    {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::BITOR, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1602 "frontend/parser/yacc.cpp"
+#line 1584 "frontend/parser/yacc.cpp"
     break;
 
   case 63: // BITAND_EXPR: EQUALITY_EXPR
-#line 465 "frontend/parser/yacc.y"
+#line 447 "frontend/parser/yacc.y"
                   {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1610 "frontend/parser/yacc.cpp"
+#line 1592 "frontend/parser/yacc.cpp"
     break;
 
   case 64: // BITAND_EXPR: BITAND_EXPR BITAND EQUALITY_EXPR
-#line 468 "frontend/parser/yacc.y"
+#line 450 "frontend/parser/yacc.y"
                                        {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::BITAND, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1618 "frontend/parser/yacc.cpp"
+#line 1600 "frontend/parser/yacc.cpp"
     break;
 
   case 65: // EQUALITY_EXPR: RELATIONAL_EXPR
-#line 474 "frontend/parser/yacc.y"
+#line 456 "frontend/parser/yacc.y"
                     {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1626 "frontend/parser/yacc.cpp"
+#line 1608 "frontend/parser/yacc.cpp"
     break;
 
   case 66: // EQUALITY_EXPR: EQUALITY_EXPR EQ RELATIONAL_EXPR
-#line 477 "frontend/parser/yacc.y"
+#line 459 "frontend/parser/yacc.y"
                                        {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::EQ, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1634 "frontend/parser/yacc.cpp"
+#line 1616 "frontend/parser/yacc.cpp"
     break;
 
   case 67: // EQUALITY_EXPR: EQUALITY_EXPR NE RELATIONAL_EXPR
-#line 480 "frontend/parser/yacc.y"
+#line 462 "frontend/parser/yacc.y"
                                        {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::NEQ, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1642 "frontend/parser/yacc.cpp"
+#line 1624 "frontend/parser/yacc.cpp"
     break;
 
   case 68: // RELATIONAL_EXPR: ADDSUB_EXPR
+#line 468 "frontend/parser/yacc.y"
+                {
+        yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
+    }
+#line 1632 "frontend/parser/yacc.cpp"
+    break;
+
+  case 69: // RELATIONAL_EXPR: RELATIONAL_EXPR LT ADDSUB_EXPR
+#line 471 "frontend/parser/yacc.y"
+                                     {
+        yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::LT, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
+    }
+#line 1640 "frontend/parser/yacc.cpp"
+    break;
+
+  case 70: // RELATIONAL_EXPR: RELATIONAL_EXPR LE ADDSUB_EXPR
+#line 474 "frontend/parser/yacc.y"
+                                     {
+        yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::LE, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
+    }
+#line 1648 "frontend/parser/yacc.cpp"
+    break;
+
+  case 71: // RELATIONAL_EXPR: RELATIONAL_EXPR GT ADDSUB_EXPR
+#line 477 "frontend/parser/yacc.y"
+                                     {
+        yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::GT, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
+    }
+#line 1656 "frontend/parser/yacc.cpp"
+    break;
+
+  case 72: // RELATIONAL_EXPR: RELATIONAL_EXPR GE ADDSUB_EXPR
+#line 480 "frontend/parser/yacc.y"
+                                     {
+        yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::GE, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
+    }
+#line 1664 "frontend/parser/yacc.cpp"
+    break;
+
+  case 73: // ADDSUB_EXPR: MULDIV_EXPR
 #line 486 "frontend/parser/yacc.y"
                 {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1650 "frontend/parser/yacc.cpp"
-    break;
-
-  case 69: // RELATIONAL_EXPR: RELATIONAL_EXPR LT ADDSUB_EXPR
-#line 489 "frontend/parser/yacc.y"
-                                     {
-        yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::LT, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
-    }
-#line 1658 "frontend/parser/yacc.cpp"
-    break;
-
-  case 70: // RELATIONAL_EXPR: RELATIONAL_EXPR LE ADDSUB_EXPR
-#line 492 "frontend/parser/yacc.y"
-                                     {
-        yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::LE, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
-    }
-#line 1666 "frontend/parser/yacc.cpp"
-    break;
-
-  case 71: // RELATIONAL_EXPR: RELATIONAL_EXPR GT ADDSUB_EXPR
-#line 495 "frontend/parser/yacc.y"
-                                     {
-        yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::GT, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
-    }
-#line 1674 "frontend/parser/yacc.cpp"
-    break;
-
-  case 72: // RELATIONAL_EXPR: RELATIONAL_EXPR GE ADDSUB_EXPR
-#line 498 "frontend/parser/yacc.y"
-                                     {
-        yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::GE, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
-    }
-#line 1682 "frontend/parser/yacc.cpp"
-    break;
-
-  case 73: // ADDSUB_EXPR: MULDIV_EXPR
-#line 504 "frontend/parser/yacc.y"
-                {
-        yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
-    }
-#line 1690 "frontend/parser/yacc.cpp"
+#line 1672 "frontend/parser/yacc.cpp"
     break;
 
   case 74: // ADDSUB_EXPR: ADDSUB_EXPR PLUS MULDIV_EXPR
-#line 507 "frontend/parser/yacc.y"
+#line 489 "frontend/parser/yacc.y"
                                    {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::ADD, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1698 "frontend/parser/yacc.cpp"
+#line 1680 "frontend/parser/yacc.cpp"
     break;
 
   case 75: // ADDSUB_EXPR: ADDSUB_EXPR MINUS MULDIV_EXPR
-#line 510 "frontend/parser/yacc.y"
+#line 492 "frontend/parser/yacc.y"
                                     {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::SUB, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1706 "frontend/parser/yacc.cpp"
+#line 1688 "frontend/parser/yacc.cpp"
     break;
 
   case 76: // MULDIV_EXPR: UNARY_EXPR
-#line 516 "frontend/parser/yacc.y"
+#line 498 "frontend/parser/yacc.y"
                {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1714 "frontend/parser/yacc.cpp"
+#line 1696 "frontend/parser/yacc.cpp"
     break;
 
   case 77: // MULDIV_EXPR: MULDIV_EXPR STAR UNARY_EXPR
-#line 519 "frontend/parser/yacc.y"
+#line 501 "frontend/parser/yacc.y"
                                   {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::MUL, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1722 "frontend/parser/yacc.cpp"
+#line 1704 "frontend/parser/yacc.cpp"
     break;
 
   case 78: // MULDIV_EXPR: MULDIV_EXPR SLASH UNARY_EXPR
-#line 522 "frontend/parser/yacc.y"
+#line 504 "frontend/parser/yacc.y"
                                    {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::DIV, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1730 "frontend/parser/yacc.cpp"
+#line 1712 "frontend/parser/yacc.cpp"
     break;
 
   case 79: // MULDIV_EXPR: MULDIV_EXPR MOD UNARY_EXPR
-#line 525 "frontend/parser/yacc.y"
+#line 507 "frontend/parser/yacc.y"
                                  {
         yylhs.value.as < FE::AST::ExprNode* > () = new BinaryExpr(Operator::MOD, yystack_[2].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1738 "frontend/parser/yacc.cpp"
+#line 1720 "frontend/parser/yacc.cpp"
     break;
 
   case 80: // UNARY_EXPR: BASIC_EXPR
-#line 530 "frontend/parser/yacc.y"
+#line 512 "frontend/parser/yacc.y"
                {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1746 "frontend/parser/yacc.cpp"
+#line 1728 "frontend/parser/yacc.cpp"
     break;
 
   case 81: // UNARY_EXPR: UNARY_OP UNARY_EXPR
-#line 533 "frontend/parser/yacc.y"
+#line 515 "frontend/parser/yacc.y"
                           {
         yylhs.value.as < FE::AST::ExprNode* > () = new UnaryExpr(yystack_[1].value.as < FE::AST::Operator > (), yystack_[0].value.as < FE::AST::ExprNode* > (), yystack_[0].value.as < FE::AST::ExprNode* > ()->line_num, yystack_[0].value.as < FE::AST::ExprNode* > ()->col_num);
     }
-#line 1754 "frontend/parser/yacc.cpp"
+#line 1736 "frontend/parser/yacc.cpp"
     break;
 
   case 82: // BASIC_EXPR: LITERAL_EXPR
-#line 539 "frontend/parser/yacc.y"
+#line 521 "frontend/parser/yacc.y"
                  {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1762 "frontend/parser/yacc.cpp"
+#line 1744 "frontend/parser/yacc.cpp"
     break;
 
   case 83: // BASIC_EXPR: LEFT_VAL_EXPR
-#line 542 "frontend/parser/yacc.y"
+#line 524 "frontend/parser/yacc.y"
                     {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1770 "frontend/parser/yacc.cpp"
+#line 1752 "frontend/parser/yacc.cpp"
     break;
 
   case 84: // BASIC_EXPR: LPAREN EXPR RPAREN
-#line 545 "frontend/parser/yacc.y"
+#line 527 "frontend/parser/yacc.y"
                          {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[1].value.as < FE::AST::ExprNode* > ();
     }
-#line 1778 "frontend/parser/yacc.cpp"
+#line 1760 "frontend/parser/yacc.cpp"
     break;
 
   case 85: // BASIC_EXPR: FUNC_CALL_EXPR
-#line 548 "frontend/parser/yacc.y"
+#line 530 "frontend/parser/yacc.y"
                      {
         yylhs.value.as < FE::AST::ExprNode* > () = yystack_[0].value.as < FE::AST::ExprNode* > ();
     }
-#line 1786 "frontend/parser/yacc.cpp"
+#line 1768 "frontend/parser/yacc.cpp"
     break;
 
   case 86: // FUNC_CALL_EXPR: IDENT LPAREN RPAREN
-#line 554 "frontend/parser/yacc.y"
+#line 536 "frontend/parser/yacc.y"
                         {
         std::string funcName = yystack_[2].value.as < std::string > ();
         if (funcName != "starttime" && funcName != "stoptime")
@@ -1802,144 +1784,144 @@ namespace  FE  {
             yylhs.value.as < FE::AST::ExprNode* > () = new CallExpr(Entry::getEntry(funcName), args, yystack_[2].location.begin.line, yystack_[2].location.begin.column);
         }
     }
-#line 1806 "frontend/parser/yacc.cpp"
+#line 1788 "frontend/parser/yacc.cpp"
     break;
 
   case 87: // FUNC_CALL_EXPR: IDENT LPAREN EXPR_LIST RPAREN
-#line 569 "frontend/parser/yacc.y"
+#line 551 "frontend/parser/yacc.y"
                                     {
         Entry* entry = Entry::getEntry(yystack_[3].value.as < std::string > ());
         yylhs.value.as < FE::AST::ExprNode* > () = new CallExpr(entry, yystack_[1].value.as < std::vector<FE::AST::ExprNode*>* > (), yystack_[3].location.begin.line, yystack_[3].location.begin.column);
     }
-#line 1815 "frontend/parser/yacc.cpp"
+#line 1797 "frontend/parser/yacc.cpp"
     break;
 
   case 88: // ARRAY_DIMENSION_EXPR_LIST: LBRACKET NOCOMMA_EXPR RBRACKET
-#line 577 "frontend/parser/yacc.y"
+#line 559 "frontend/parser/yacc.y"
                                    {
         yylhs.value.as < std::vector<FE::AST::ExprNode*>* > () = new std::vector<ExprNode*>();
         yylhs.value.as < std::vector<FE::AST::ExprNode*>* > ()->push_back(yystack_[1].value.as < FE::AST::ExprNode* > ());
     }
-#line 1824 "frontend/parser/yacc.cpp"
+#line 1806 "frontend/parser/yacc.cpp"
     break;
 
   case 89: // ARRAY_DIMENSION_EXPR_LIST: ARRAY_DIMENSION_EXPR_LIST LBRACKET NOCOMMA_EXPR RBRACKET
-#line 581 "frontend/parser/yacc.y"
+#line 563 "frontend/parser/yacc.y"
                                                                {
         yylhs.value.as < std::vector<FE::AST::ExprNode*>* > () = yystack_[3].value.as < std::vector<FE::AST::ExprNode*>* > ();
         yylhs.value.as < std::vector<FE::AST::ExprNode*>* > ()->push_back(yystack_[1].value.as < FE::AST::ExprNode* > ());
     }
-#line 1833 "frontend/parser/yacc.cpp"
+#line 1815 "frontend/parser/yacc.cpp"
     break;
 
   case 90: // LEFT_VAL_EXPR: IDENT
-#line 588 "frontend/parser/yacc.y"
+#line 570 "frontend/parser/yacc.y"
           {
         Entry* entry = Entry::getEntry(yystack_[0].value.as < std::string > ());
         yylhs.value.as < FE::AST::ExprNode* > () = new LeftValExpr(entry, nullptr, yystack_[0].location.begin.line, yystack_[0].location.begin.column);
     }
-#line 1842 "frontend/parser/yacc.cpp"
+#line 1824 "frontend/parser/yacc.cpp"
     break;
 
   case 91: // LEFT_VAL_EXPR: IDENT ARRAY_DIMENSION_EXPR_LIST
-#line 592 "frontend/parser/yacc.y"
+#line 574 "frontend/parser/yacc.y"
                                       {
         Entry* entry = Entry::getEntry(yystack_[1].value.as < std::string > ());
         yylhs.value.as < FE::AST::ExprNode* > () = new LeftValExpr(entry, yystack_[0].value.as < std::vector<FE::AST::ExprNode*>* > (), yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1851 "frontend/parser/yacc.cpp"
+#line 1833 "frontend/parser/yacc.cpp"
     break;
 
   case 92: // LITERAL_EXPR: INT_CONST
-#line 599 "frontend/parser/yacc.y"
+#line 581 "frontend/parser/yacc.y"
               {
         yylhs.value.as < FE::AST::ExprNode* > () = new LiteralExpr(yystack_[0].value.as < int > (), yystack_[0].location.begin.line, yystack_[0].location.begin.column);
     }
-#line 1859 "frontend/parser/yacc.cpp"
+#line 1841 "frontend/parser/yacc.cpp"
     break;
 
   case 93: // LITERAL_EXPR: FLOAT_CONST
-#line 602 "frontend/parser/yacc.y"
+#line 584 "frontend/parser/yacc.y"
                   {
         yylhs.value.as < FE::AST::ExprNode* > () = new LiteralExpr(yystack_[0].value.as < float > (), yystack_[0].location.begin.line, yystack_[0].location.begin.column);
     }
-#line 1867 "frontend/parser/yacc.cpp"
+#line 1849 "frontend/parser/yacc.cpp"
     break;
 
   case 94: // LITERAL_EXPR: LL_CONST
-#line 606 "frontend/parser/yacc.y"
+#line 588 "frontend/parser/yacc.y"
                {
         yylhs.value.as < FE::AST::ExprNode* > () = new LiteralExpr(yystack_[0].value.as < long long > (), yystack_[0].location.begin.line, yystack_[0].location.begin.column);
     }
-#line 1875 "frontend/parser/yacc.cpp"
+#line 1857 "frontend/parser/yacc.cpp"
     break;
 
   case 95: // LITERAL_EXPR: STR_CONST
-#line 609 "frontend/parser/yacc.y"
+#line 591 "frontend/parser/yacc.y"
                 {
         yylhs.value.as < FE::AST::ExprNode* > () = new LiteralExpr(yystack_[0].value.as < std::string > (), yystack_[0].location.begin.line, yystack_[0].location.begin.column);
     }
-#line 1883 "frontend/parser/yacc.cpp"
+#line 1865 "frontend/parser/yacc.cpp"
     break;
 
   case 96: // TYPE: INT
-#line 617 "frontend/parser/yacc.y"
+#line 599 "frontend/parser/yacc.y"
         {
         yylhs.value.as < FE::AST::Type* > () = TypeFactory::getBasicType(Type_t::INT);
     }
-#line 1891 "frontend/parser/yacc.cpp"
+#line 1873 "frontend/parser/yacc.cpp"
     break;
 
   case 97: // TYPE: FLOAT
-#line 620 "frontend/parser/yacc.y"
+#line 602 "frontend/parser/yacc.y"
             {
         yylhs.value.as < FE::AST::Type* > () = TypeFactory::getBasicType(Type_t::FLOAT);
     }
-#line 1899 "frontend/parser/yacc.cpp"
+#line 1881 "frontend/parser/yacc.cpp"
     break;
 
   case 98: // TYPE: VOID
-#line 623 "frontend/parser/yacc.y"
+#line 605 "frontend/parser/yacc.y"
            {
         yylhs.value.as < FE::AST::Type* > () = TypeFactory::getBasicType(Type_t::VOID);
     }
-#line 1907 "frontend/parser/yacc.cpp"
+#line 1889 "frontend/parser/yacc.cpp"
     break;
 
   case 99: // UNARY_OP: PLUS
-#line 630 "frontend/parser/yacc.y"
+#line 612 "frontend/parser/yacc.y"
          {
         yylhs.value.as < FE::AST::Operator > () = Operator::ADD;
     }
-#line 1915 "frontend/parser/yacc.cpp"
+#line 1897 "frontend/parser/yacc.cpp"
     break;
 
   case 100: // UNARY_OP: MINUS
-#line 633 "frontend/parser/yacc.y"
+#line 615 "frontend/parser/yacc.y"
             {
         yylhs.value.as < FE::AST::Operator > () = Operator::SUB;
     }
-#line 1923 "frontend/parser/yacc.cpp"
+#line 1905 "frontend/parser/yacc.cpp"
     break;
 
   case 101: // UNARY_OP: NOT
-#line 636 "frontend/parser/yacc.y"
+#line 618 "frontend/parser/yacc.y"
           {
         yylhs.value.as < FE::AST::Operator > () = Operator::NOT;
     }
-#line 1931 "frontend/parser/yacc.cpp"
+#line 1913 "frontend/parser/yacc.cpp"
     break;
 
   case 102: // BREAK_STMT: BREAK SEMICOLON
-#line 642 "frontend/parser/yacc.y"
+#line 624 "frontend/parser/yacc.y"
                     {
         yylhs.value.as < FE::AST::StmtNode* > () = new BreakStmt(yystack_[1].location.begin.line, yystack_[1].location.begin.column);
     }
-#line 1939 "frontend/parser/yacc.cpp"
+#line 1921 "frontend/parser/yacc.cpp"
     break;
 
 
-#line 1943 "frontend/parser/yacc.cpp"
+#line 1925 "frontend/parser/yacc.cpp"
 
             default:
               break;
@@ -2556,15 +2538,15 @@ namespace  FE  {
   {
        0,   141,   141,   145,   151,   155,   163,   166,   169,   172,
      175,   178,   181,   184,   187,   190,   193,   199,   205,   211,
-     214,   221,   227,   230,   246,   253,   257,   265,   268,   276,
-     279,   285,   291,   294,   309,   313,   320,   325,   334,   338,
-     342,   350,   353,   359,   363,   371,   374,   378,   383,   387,
-     395,   401,   405,   412,   415,   430,   433,   440,   443,   449,
-     452,   457,   460,   465,   468,   474,   477,   480,   486,   489,
-     492,   495,   498,   504,   507,   510,   516,   519,   522,   525,
-     530,   533,   539,   542,   545,   548,   554,   569,   577,   581,
-     588,   592,   599,   602,   606,   609,   617,   620,   623,   630,
-     633,   636,   642
+     214,   221,   227,   230,   236,   243,   247,   255,   258,   266,
+     269,   275,   281,   284,   291,   295,   302,   307,   316,   320,
+     324,   332,   335,   341,   345,   353,   356,   360,   365,   369,
+     377,   383,   387,   394,   397,   412,   415,   422,   425,   431,
+     434,   439,   442,   447,   450,   456,   459,   462,   468,   471,
+     474,   477,   480,   486,   489,   492,   498,   501,   504,   507,
+     512,   515,   521,   524,   527,   530,   536,   551,   559,   563,
+     570,   574,   581,   584,   588,   591,   599,   602,   605,   612,
+     615,   618,   624
   };
 
   void
@@ -2597,9 +2579,9 @@ namespace  FE  {
 
 #line 4 "frontend/parser/yacc.y"
 } //  FE 
-#line 2601 "frontend/parser/yacc.cpp"
+#line 2583 "frontend/parser/yacc.cpp"
 
-#line 647 "frontend/parser/yacc.y"
+#line 629 "frontend/parser/yacc.y"
 
 
 void FE::YaccParser::error(const FE::location& location, const std::string& message)
