@@ -240,10 +240,11 @@ namespace FE::AST
 
         std::vector<int>      arrayDims;
         std::vector<VarValue> initList;
+        bool isParamPtr; // 标记是否为函数参数（指针）
 
-        VarAttr() : isConstDecl(false), isInitialized(false), type(voidType), scopeLevel(-1), arrayDims(), initList() {}
+        VarAttr() : isConstDecl(false), isInitialized(false), type(voidType), scopeLevel(-1), arrayDims(), initList(), isParamPtr(false) {}
         VarAttr(Type* t, bool isConst = false, int level = -1)
-            : isConstDecl(isConst), isInitialized(false), type(t), scopeLevel(level), arrayDims(), initList()
+            : isConstDecl(isConst), isInitialized(false), type(t), scopeLevel(level), arrayDims(), initList(), isParamPtr(false)
         {}
     };
 

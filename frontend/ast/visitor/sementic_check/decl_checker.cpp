@@ -97,15 +97,18 @@ namespace FE::AST
                     if (elemType->getBaseType() == Type_t::INT) defaultValue.intValue = 0;
                     else if (elemType->getBaseType() == Type_t::FLOAT) defaultValue.floatValue = 0.0f;
                     else if (elemType->getBaseType() == Type_t::BOOL) defaultValue.boolValue = false;
-                    std::vector<VarValue> elements(totalSize, defaultValue);
-                    if (!checkArrayInitializer(*initList, elemType, elements, sym->arrayDims, 0, 0))
-                    {
-                        errors.push_back("Error: Invalid initializer structure for array at line " +
-                                        std::to_string(node.init->line_num) + ", column " +
-                                        std::to_string(node.init->col_num) + ".");
-                        res = false;
+                    
+                    if (initList->init_list && !initList->init_list->empty()) {
+                        std::vector<VarValue> elements(totalSize, defaultValue);
+                        if (!checkArrayInitializer(*initList, elemType, elements, sym->arrayDims, 0, 0))
+                        {
+                            errors.push_back("Error: Invalid initializer structure for array at line " +
+                                            std::to_string(node.init->line_num) + ", column " +
+                                            std::to_string(node.init->col_num) + ".");
+                            res = false;
+                        }
+                        sym->initList = elements;
                     }
-                    sym->initList = elements;
                 }
             else
             {
@@ -148,6 +151,7 @@ namespace FE::AST
         varAttr.isConstDecl = false; // 假设形参不是 const 声明
         // 处理数组维度
         if(node.dims != nullptr){
+            varAttr.isParamPtr = true;
             for (size_t i = 0; i < node.dims->size(); ++i)
             {                        
                 // 访问维度表达式以确保其语义正确

@@ -62,6 +62,7 @@ namespace FE::AST
                     res = false;
                 }
                 size_t offset = 0;
+                bool allIndicesConst = true;
                 for (size_t i = 0; i < node.indices->size(); ++i)
                 {
                     auto& index = (*node.indices)[i];
@@ -70,7 +71,7 @@ namespace FE::AST
                         res = false;
                         continue;
                     }
-                    if (index->attr.val.value.type != intType)
+                    if (index->attr.val.value.type != intType && index->attr.val.value.type != boolType)
                     {
                         errors.push_back("Error: Array subscript must be of type int at line " +
                                         std::to_string(node.line_num) + ", column " +
@@ -79,34 +80,53 @@ namespace FE::AST
                         continue;
                     }
                     // 检查下标是否越界
-                    int subscript = index->attr.val.value.getInt();
-                    if (subscript < 0 || subscript >= varAttr->arrayDims[i])
-                    {
-                        errors.push_back("Error: Array subscript out of bounds at line " +
-                                        std::to_string(node.line_num) + ", column " +
-                                        std::to_string(node.col_num) + ".");
-                        res = false;
-                        continue;
+                    if (index->attr.val.isConstexpr) {
+                        int subscript = index->attr.val.value.getInt();
+                        bool checkUpperBound = true;
+                        if (varAttr->isParamPtr && i == 0) checkUpperBound = false;
+
+                        if (subscript < 0 || (checkUpperBound && varAttr->arrayDims[i] > 0 && subscript >= varAttr->arrayDims[i]))
+                        {
+                            errors.push_back("Error: Array subscript out of bounds at line " +
+                                            std::to_string(node.line_num) + ", column " +
+                                            std::to_string(node.col_num) + ".");
+                            res = false;
+                            continue;
+                        }
+                        size_t mul = 1;
+                        for (size_t j = i + 1; j < varAttr->arrayDims.size(); ++j) {
+                            mul *= varAttr->arrayDims[j];
+                        }
+                        offset += subscript * mul;
+                    } else {
+                        allIndicesConst = false;
                     }
-                    size_t mul = 1;
-                    for (size_t j = i + 1; j < varAttr->arrayDims.size(); ++j) {
-                        mul *= varAttr->arrayDims[j];
-                    }
-                    offset += subscript * mul;
                 }
                 // 计算偏移量并获取数组元素值
-                if( offset < varAttr->initList.size()) node.attr.val.value = varAttr->initList[offset];
+                if(res && allIndicesConst && node.indices->size() == varAttr->arrayDims.size() && offset < varAttr->initList.size()) 
+                    node.attr.val.value = varAttr->initList[offset];
+                
+                if (node.indices->size() < varAttr->arrayDims.size()) {
+                    node.attr.val.value.type = TypeFactory::getPtrType(varAttr->type);
+                } else {
+                    node.attr.val.value.type = varAttr->type;
+                }
+                node.attr.val.isConstexpr = varAttr->isConstDecl && allIndicesConst;
             }
             else{
-                // 非数组调用，直接获取变量值
-                node.attr.val.value = varAttr->initList.begin() != varAttr->initList.end() ? *(varAttr->initList.begin()) : VarValue();
+                if (!varAttr->arrayDims.empty()) {
+                    node.attr.val.value.type = TypeFactory::getPtrType(varAttr->type);
+                    node.attr.val.isConstexpr = false;
+                } else {
+                    // 非数组调用，直接获取变量值
+                    node.attr.val.value = varAttr->initList.begin() != varAttr->initList.end() ? *(varAttr->initList.begin()) : VarValue();
+                    node.attr.val.value.type = varAttr->type;
+                    node.attr.val.isConstexpr = varAttr->isConstDecl;
+                }
             }
         }
 
-            // 设置表达式属性
-            node.attr.val.value.type = varAttr->type;
-            node.attr.val.isConstexpr = varAttr->isConstDecl;
-            return res;
+        return res;
         }
 
     bool ASTChecker::visit(LiteralExpr& node)

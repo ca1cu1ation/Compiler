@@ -38,23 +38,23 @@ namespace ME
                 fdef->argRegs.emplace_back(at, getRegOperand(preg));
                 // 为参数创建本地 alloca，并把参数存入其中，这样变量访问仍使用指针
                 size_t ptrReg = getNewRegId();
-                if (p->dims && !p->dims->empty()) {
-                    std::vector<int> dims;
-                    // 计算维度数量
-                    size_t dimCount = p->dims->size();
-                    for (size_t i = 0; i < dimCount; i++) {
-                        dims.push_back(0); // 占位
-                    }
-                    insert(new AllocaInst(at, getRegOperand(ptrReg), dims));
-                } else {
-                    insert(new AllocaInst(at, getRegOperand(ptrReg)));
-                }
+                // 对于数组参数（指针），我们只分配一个指针变量，而不是数组
+                insert(new AllocaInst(at, getRegOperand(ptrReg)));
                 insert(createStoreInst(at, preg, getRegOperand(ptrReg)));
 
                 name2reg.addSymbol(p->entry, ptrReg);
-                FE::AST::VarAttr va; va.type = p->type;
+                FE::AST::VarAttr va; 
+                va.type = p->type;
                 if (p->dims && !p->dims->empty()) {
-                    va.arrayDims.resize(p->dims->size(), 0);
+                    va.isParamPtr = true;
+                    // 提取维度信息
+                    for (auto expr : *p->dims) {
+                        if (expr && expr->attr.val.isConstexpr) {
+                            va.arrayDims.push_back(expr->attr.val.getInt());
+                        } else {
+                            va.arrayDims.push_back(0); // 第一维通常为空或0
+                        }
+                    }
                 }
                 reg2attr[ptrReg] = va;
                 if (p->dims && !p->dims->empty()) paramPtrTab[preg] = true;
@@ -157,20 +157,15 @@ namespace ME
 
         // cond
         enterBlock(condL);
-        if (node.cond) {
-            apply(*this, *node.cond, m);
-            size_t condReg = getMaxReg();
-            DataType condType = convert(node.cond->attr.val.value.type);
-            if (condType != DataType::I1) {
-                auto convs = createTypeConvertInst(condType, DataType::I1, condReg);
-                for (auto& inst : convs) insert(inst);
-                condReg = getMaxReg();
-            }
-            insert(createBranchInst(condReg, bodyL, endL));
-        } else {
-            // 无条件循环
-            insert(createBranchInst(bodyL));
+        apply(*this, *node.cond, m);
+        size_t condReg = getMaxReg();
+        DataType condType = convert(node.cond->attr.val.value.type);
+        if (condType != DataType::I1) {
+            auto convs = createTypeConvertInst(condType, DataType::I1, condReg);
+            for (auto& inst : convs) insert(inst);
+            condReg = getMaxReg();
         }
+        insert(createBranchInst(condReg, bodyL, endL));
 
         // body
         enterBlock(bodyL);

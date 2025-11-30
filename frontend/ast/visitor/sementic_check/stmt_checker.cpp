@@ -56,8 +56,19 @@ namespace FE::AST
         // 检查返回类型是否匹配
         if(curFuncRetType !=node.retType && node.entry!=Sym::Entry::getEntry("main"))
         {
-            errors.push_back("Error: Function " + node.entry->getName() + " return type mismatch.");
-            res = false;
+            bool compatible = false;
+            // 允许 int 和 float 之间的隐式转换
+            if ((curFuncRetType->getBaseType() == Type_t::INT || curFuncRetType->getBaseType() == Type_t::FLOAT) &&
+                (node.retType->getBaseType() == Type_t::INT || node.retType->getBaseType() == Type_t::FLOAT))
+            {
+                compatible = true;
+            }
+
+            if (!compatible)
+            {
+                errors.push_back("Error: Function " + node.entry->getName() + " return type mismatch.");
+                res = false;
+            }
         }
         
         // 退出作用域

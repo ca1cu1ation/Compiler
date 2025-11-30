@@ -4,28 +4,31 @@ namespace ME
 {
     void ASTCodeGen::visit(FE::AST::LeftValExpr& node, Module* m)
     {
-        // 查找变量位置（全局或局部），处理数组下标/GEP，必要时发出 load
         FE::Sym::Entry* entry = node.entry;
-
-        // 优先判断局部变量（支持遮蔽），否则使用全局变量
         Operand* basePtr = nullptr;
         DataType baseType = DataType::UNK;
+        bool isParamPtr = false;
+        std::vector<int> arrayDims;
+
         size_t reg = name2reg.getReg(entry);
         if (reg != static_cast<size_t>(-1))
         {
-            // 局部变量：name2reg 存储了指针寄存器
             basePtr = getRegOperand(reg);
             auto it = reg2attr.find(reg);
-            if (it != reg2attr.end()) baseType = convert(it->second.type);
+            if (it != reg2attr.end()) {
+                baseType = convert(it->second.type);
+                isParamPtr = it->second.isParamPtr;
+                arrayDims = it->second.arrayDims;
+            }
         }
         else
         {
-            // 全局变量使用 GlobalOperand
             auto git = glbSymbols.find(entry);
             if (git != glbSymbols.end())
             {
                 basePtr = getGlobalOperand(entry->getName());
                 baseType = convert(git->second.type);
+                arrayDims = git->second.arrayDims;
             }
             else
             {
@@ -33,12 +36,20 @@ namespace ME
             }
         }
 
-        // 处理数组下标：如果有 indices，则生成 GEP
-        if (node.indices && !node.indices->empty())
-        {
-            std::vector<Operand*> idxOps;
-            // 第一个索引是基址偏移，通常为0
+        // 如果是函数参数（指针），先加载指针值
+        if (isParamPtr) {
+            size_t loadedPtrReg = getNewRegId();
+            insert(createLoadInst(DataType::PTR, basePtr, loadedPtrReg));
+            basePtr = getRegOperand(loadedPtrReg);
+        }
+
+        std::vector<Operand*> idxOps;
+        // 如果不是指针参数（即本地/全局数组），GEP需要先索引0
+        if (!isParamPtr) {
             idxOps.push_back(getImmeI32Operand(0));
+        }
+
+        if (node.indices) {
             for (auto idxExpr : *node.indices)
             {
                 apply(*this, *idxExpr, m);
@@ -51,46 +62,59 @@ namespace ME
                 }
                 idxOps.push_back(getRegOperand(idxReg));
             }
+        }
 
-            size_t resReg = getNewRegId();
-            // 对于数组访问，基类型应该是元素类型
-            DataType elemType = baseType;
-            // 如果是多维数组，需要调整类型
-            auto git = glbSymbols.find(entry);
-            if (git != glbSymbols.end() && !git->second.arrayDims.empty()) {
-                // 获取数组元素的基础类型
-                elemType = convert(git->second.type);
-                // 如果是数组类型，转换为对应的指针或元素类型
-                // 这里简化处理，假设都是 I32 类型
-                if (elemType == DataType::PTR) {
-                    elemType = DataType::I32;
-                }
-            } else if (reg != static_cast<size_t>(-1)) {
-                auto rit = reg2attr.find(reg);
-                if (rit != reg2attr.end() && !rit->second.arrayDims.empty()) {
-                    elemType = convert(rit->second.type);
-                    if (elemType == DataType::PTR) {
-                        elemType = DataType::I32;
+        size_t providedIndices = node.indices ? node.indices->size() : 0;
+        Operand* resultPtr = basePtr;
+
+        // 如果提供了下标，或者（是数组且未提供下标-需要decay），则生成GEP
+        if (providedIndices > 0 || (!isParamPtr && !arrayDims.empty())) {
+             // 如果是指针参数且没有下标，basePtr已经是我们要的指针，无需GEP
+             if (isParamPtr && providedIndices == 0) {
+                 // do nothing
+             } else {
+                 size_t resReg = getNewRegId();
+                 DataType elemType = baseType; 
+                // If arrayDims is empty but basePtr is a global, try to fetch dims from Module globalVars
+                if (arrayDims.empty()) {
+                    auto gop = dynamic_cast<GlobalOperand*>(basePtr);
+                    if (gop && m) {
+                        for (auto gv : m->globalVars) {
+                            if (gv->name == gop->name) {
+                                arrayDims = gv->initList.arrayDims;
+                                break;
+                            }
+                        }
                     }
                 }
-            }
-            auto gep = createGEP_I32Inst(elemType, basePtr, {}, idxOps, resReg);
-            insert(gep);
-            lval2ptr[&node] = getRegOperand(resReg);
-            
-            // 始终生成 load，以便表达式求值产生值寄存器
-            size_t valReg = getNewRegId();
-            auto ld = createLoadInst(elemType, getRegOperand(resReg), valReg);
-            insert(ld);
+                std::vector<int> gepDims = arrayDims;
+                if (isParamPtr && !gepDims.empty()) {
+                    gepDims.erase(gepDims.begin());
+                }
+                
+                // 数组名作为指针使用（decay），需要指向首元素
+                if (!isParamPtr && providedIndices == 0) {
+                    idxOps.push_back(getImmeI32Operand(0));
+                }
+
+                auto gep = createGEP_I32Inst(elemType, basePtr, gepDims, idxOps, resReg);
+                 insert(gep);
+                 resultPtr = getRegOperand(resReg);
+             }
         }
-        else
-        {
-            // 非数组元素，直接返回指针或加载
-            lval2ptr[&node] = basePtr;
-            // 始终生成 load，以便表达式求值产生值寄存器
+        
+        lval2ptr[&node] = resultPtr;
+
+        // 判断是否需要加载：只有当完全索引了所有维度时才加载
+        // 否则（部分索引），结果是指向子数组的指针（decay），不应加载
+        size_t totalDims = arrayDims.size();
+        bool shouldLoad = (providedIndices == totalDims);
+        
+        // 特殊情况：标量变量，totalDims=0, provided=0 -> Load
+        
+        if (shouldLoad) {
             size_t valReg = getNewRegId();
-            auto ld = createLoadInst(baseType, basePtr, valReg);
-            insert(ld);
+            insert(createLoadInst(baseType, resultPtr, valReg));
         }
     }
 
@@ -184,13 +208,18 @@ namespace ME
         size_t lhsReg = getMaxReg();
         DataType lhsType = convert(lhs.attr.val.value.type);
         size_t lhsBool;
-        if (lhsType == DataType::I1)
+        if (lhsType == DataType::I1){
             lhsBool = lhsReg;
-        else
-        {
+        }
+        else if(lhsType == DataType::I32){
             lhsBool = getNewRegId();
             IcmpInst* icmp = createIcmpInst_ImmeRight(ICmpOp::NE, lhsReg, 0, lhsBool);
             insert(icmp);
+        }
+        else {
+            lhsBool = getNewRegId();
+            FcmpInst* fcmp = createFcmpInst_ImmeRight(FCmpOp::ONE, lhsReg, 0.0f, lhsBool);
+            insert(fcmp);
         }
 
         // 在当前函数中分配一个临时 i32 用于保存结果（0/1）
@@ -213,13 +242,23 @@ namespace ME
         apply(*this, rhs, m);
         size_t rhsReg = getMaxReg();
         DataType rhsType = convert(rhs.attr.val.value.type);
-        if (rhsType != DataType::I32)
-        {
-            auto convs = createTypeConvertInst(rhsType, DataType::I32, rhsReg);
-            for (auto& c : convs) insert(c);
-            rhsReg = getMaxReg();
+        
+        // 逻辑运算的右操作数也必须视为布尔值
+        size_t rhsBoolReg = rhsReg;
+        if (rhsType == DataType::I32) {
+             size_t tmp = getNewRegId();
+             insert(createIcmpInst_ImmeRight(ICmpOp::NE, rhsReg, 0, tmp));
+             rhsBoolReg = tmp;
+        } else if (rhsType == DataType::F32) {
+             size_t tmp = getNewRegId();
+             insert(createFcmpInst_ImmeRight(FCmpOp::ONE, rhsReg, 0.0f, tmp));
+             rhsBoolReg = tmp;
         }
-        insert(createStoreInst(DataType::I32, getRegOperand(rhsReg), getRegOperand(tmpPtr)));
+        
+        size_t rhsI32Reg = getNewRegId();
+        insert(createZextInst(rhsBoolReg, rhsI32Reg, 1, 32));
+        
+        insert(createStoreInst(DataType::I32, getRegOperand(rhsI32Reg), getRegOperand(tmpPtr)));
         insert(createBranchInst(endLabel));
 
         // false 分支：写入 0
@@ -243,13 +282,18 @@ namespace ME
         size_t lhsReg = getMaxReg();
         DataType lhsType = convert(lhs.attr.val.value.type);
         size_t lhsBool;
-        if (lhsType == DataType::I1)
+        if (lhsType == DataType::I1){
             lhsBool = lhsReg;
-        else
-        {
+        }
+        else if(lhsType == DataType::I32){
             lhsBool = getNewRegId();
             IcmpInst* icmp = createIcmpInst_ImmeRight(ICmpOp::NE, lhsReg, 0, lhsBool);
             insert(icmp);
+        }
+        else {
+            lhsBool = getNewRegId();
+            FcmpInst* fcmp = createFcmpInst_ImmeRight(FCmpOp::ONE, lhsReg, 0.0f, lhsBool);
+            insert(fcmp);
         }
 
         // 分配临时 i32
@@ -277,13 +321,23 @@ namespace ME
         apply(*this, rhs, m);
         size_t rhsReg = getMaxReg();
         DataType rhsType = convert(rhs.attr.val.value.type);
-        if (rhsType != DataType::I32)
-        {
-            auto convs = createTypeConvertInst(rhsType, DataType::I32, rhsReg);
-            for (auto& c : convs) insert(c);
-            rhsReg = getMaxReg();
+        
+        // 逻辑运算的右操作数也必须视为布尔值
+        size_t rhsBoolReg = rhsReg;
+        if (rhsType == DataType::I32) {
+             size_t tmp = getNewRegId();
+             insert(createIcmpInst_ImmeRight(ICmpOp::NE, rhsReg, 0, tmp));
+             rhsBoolReg = tmp;
+        } else if (rhsType == DataType::F32) {
+             size_t tmp = getNewRegId();
+             insert(createFcmpInst_ImmeRight(FCmpOp::ONE, rhsReg, 0.0f, tmp));
+             rhsBoolReg = tmp;
         }
-        insert(createStoreInst(DataType::I32, getRegOperand(rhsReg), getRegOperand(tmpPtr)));
+        
+        size_t rhsI32Reg = getNewRegId();
+        insert(createZextInst(rhsBoolReg, rhsI32Reg, 1, 32));
+
+        insert(createStoreInst(DataType::I32, getRegOperand(rhsI32Reg), getRegOperand(tmpPtr)));
         insert(createBranchInst(endLabel));
 
         // end: load tmp, convert to i1
@@ -329,18 +383,35 @@ namespace ME
         // 获取被调用函数的返回类型和参数类型（若在 funcDecls 中）
         DataType retType = DataType::VOID;
         std::vector<DataType> targetArgTypes;
+        bool found = false;
         for (auto& pd : funcDecls)
         {   
             if (pd.first->getName() == fname)
             {                   
+                found = true;
                 retType = convert(pd.second->retType);
                 if(pd.second->params){
                     for (auto param : *pd.second->params) {
-                        targetArgTypes.push_back(convert(param->type));                
+                        DataType pt = convert(param->type);
+                        if (param->dims && !param->dims->empty()) pt = DataType::PTR;
+                        targetArgTypes.push_back(pt);                
                     }
                 }
                 break;
             }
+        }
+        if (!found) {
+             // Fallback: 检查 Module 中的 funcDecls
+             for (auto f : m->funcDecls) {
+                 if (f->funcName == fname) {
+                     retType = f->retType;
+                     for (auto arg : f->argTypes) {
+                         targetArgTypes.push_back(arg);
+                     }
+                     found = true;
+                     break;
+                 }
+             }
         }
         
         // 生成实参并做类型转换
@@ -352,6 +423,13 @@ namespace ME
                 size_t reg = getMaxReg();
                 DataType at = convert(a->attr.val.value.type);
                 DataType targetType = (idx < targetArgTypes.size()) ? targetArgTypes[idx] : at;
+                
+                // 如果目标是指针，且当前类型不是指针（通常是数组decay），则强制视为指针
+                // 这样避免了 I32 -> PTR 的非法转换尝试
+                if (targetType == DataType::PTR && at != DataType::PTR) {
+                    at = DataType::PTR;
+                }
+
                 if (at != targetType) {
                     auto convs = createTypeConvertInst(at, targetType, reg);
                     for (auto& inst : convs) insert(inst);
