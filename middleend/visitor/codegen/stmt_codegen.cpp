@@ -72,28 +72,6 @@ namespace ME
             else if (retType == DataType::F32) insert(createRetInst(0.0f));
         }
 
-        // 清理每个基本块：若存在多个终结指令或终结指令后还有指令，移除多余部分
-        for (auto& p : curFunc->blocks)
-        {
-            Block* b = p.second;
-            bool seenTerm = false;
-            std::deque<Instruction*> newInsts;
-            for (auto inst : b->insts)
-            {
-                if (!seenTerm)
-                {
-                    newInsts.push_back(inst);
-                    if (inst->isTerminator()) seenTerm = true;
-                }
-                else
-                {
-                    // 多余的指令（包括重复的 terminator），释放以避免内存泄漏
-                    delete inst;
-                }
-            }
-            b->insts = std::move(newInsts);
-        }
-
         // 退出函数的局部符号作用域
         name2reg.exitScope();
         exitBlock();

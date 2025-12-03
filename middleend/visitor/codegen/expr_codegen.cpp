@@ -75,7 +75,7 @@ namespace ME
              } else {
                  size_t resReg = getNewRegId();
                  DataType elemType = baseType; 
-                // If arrayDims is empty but basePtr is a global, try to fetch dims from Module globalVars
+                // 获取数组维度信息（全局变量可能需要从Module中查找） 
                 if (arrayDims.empty()) {
                     auto gop = dynamic_cast<GlobalOperand*>(basePtr);
                     if (gop && m) {
