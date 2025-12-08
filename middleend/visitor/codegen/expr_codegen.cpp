@@ -69,38 +69,34 @@ namespace ME
 
         // 如果提供了下标，或者（是数组且未提供下标-需要decay），则生成GEP
         if (providedIndices > 0 || (!isParamPtr && !arrayDims.empty())) {
-             // 如果是指针参数且没有下标，basePtr已经是我们要的指针，无需GEP
-             if (isParamPtr && providedIndices == 0) {
-                 // do nothing
-             } else {
-                 size_t resReg = getNewRegId();
-                 DataType elemType = baseType; 
-                // 获取数组维度信息（全局变量可能需要从Module中查找） 
-                if (arrayDims.empty()) {
-                    auto gop = dynamic_cast<GlobalOperand*>(basePtr);
-                    if (gop && m) {
-                        for (auto gv : m->globalVars) {
-                            if (gv->name == gop->name) {
-                                arrayDims = gv->initList.arrayDims;
-                                break;
-                            }
+            size_t resReg = getNewRegId();
+            DataType elemType = baseType; 
+            // 获取数组维度信息（全局变量可能需要从Module中查找） 
+            if (arrayDims.empty()) {
+                auto gop = dynamic_cast<GlobalOperand*>(basePtr);
+                if (gop && m) {
+                    for (auto gv : m->globalVars) {
+                        if (gv->name == gop->name) {
+                            arrayDims = gv->initList.arrayDims;
+                            break;
                         }
                     }
                 }
-                std::vector<int> gepDims = arrayDims;
-                if (isParamPtr && !gepDims.empty()) {
-                    gepDims.erase(gepDims.begin());
-                }
-                
-                // 数组名作为指针使用（decay），需要指向首元素
-                if (!isParamPtr && providedIndices == 0) {
-                    idxOps.push_back(getImmeI32Operand(0));
-                }
+            }
+            std::vector<int> gepDims = arrayDims;
+            // 如果是指针参数，去掉第一维
+            if (isParamPtr && !gepDims.empty()) {
+                gepDims.erase(gepDims.begin());
+            }
+            
+            // 数组名作为指针使用（decay），需要指向首元素
+            if (!isParamPtr && providedIndices == 0) {
+                idxOps.push_back(getImmeI32Operand(0));
+            }
 
-                auto gep = createGEP_I32Inst(elemType, basePtr, gepDims, idxOps, resReg);
-                 insert(gep);
-                 resultPtr = getRegOperand(resReg);
-             }
+            auto gep = createGEP_I32Inst(elemType, basePtr, gepDims, idxOps, resReg);
+            insert(gep);
+            resultPtr = getRegOperand(resReg);            
         }
         
         lval2ptr[&node] = resultPtr;

@@ -41,6 +41,8 @@ namespace ME::Analysis
 
         void build(ME::Function& function);
         void buildFromBlock(size_t blockId, std::map<size_t, bool>& visited);
+        std::vector<Block*> getSuccessors(Block* block); // 获取基本块的后继块
+        std::vector<Block*> getPredecessors(Block* block); // 获取基本块的前驱块
     };
 
     template <>

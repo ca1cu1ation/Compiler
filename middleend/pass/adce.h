@@ -20,19 +20,19 @@ namespace ME
         void runOnModule(Module& module) override;
 
     private:
-        std::set<Instruction*> liveInsts; // Set of live instructions
-        std::vector<Instruction*> worklist; // Worklist for liveness propagation
-        std::map<size_t, Instruction*> defMap; // RegNum -> Defining Instruction
-        std::map<Instruction*, Block*> instToBlock; // Instruction -> Parent Block
+        std::set<Instruction*> liveInsts; // 活跃指令集合
+        std::vector<Instruction*> worklist; // 活跃性传播的工作队列
+        std::map<size_t, Instruction*> defMap; // RegNum -> 定义该寄存器的指令
+        std::map<Instruction*, Block*> instToBlock; // 指令 -> 所属基本块
 
-        void markLive(Instruction* inst); // Mark instruction as live
-        bool isLive(Instruction* inst); // Check if instruction is live
+        void markLive(Instruction* inst); // 标记指令为活跃
+        bool isLive(Instruction* inst); // 检查指令是否活跃
         
-        void buildDefMap(Function& function); // Build definition map
-        std::vector<Operand*> getUses(Instruction* inst); // Get uses of an instruction
-        Instruction* getDef(Operand* op); // Get defining instruction of an operand
+        void buildDefMap(Function& function); // 构建定义映射表
+        std::vector<Operand*> getUses(Instruction* inst); // 获取指令使用的操作数
+        Instruction* getDef(Operand* op); // 获取操作数的定义指令
         
-        // Control Dependence
+        // 控制依赖
         void computePostDominance(Function& function, std::map<Block*, std::set<Block*>>& pdf);
     };
 }

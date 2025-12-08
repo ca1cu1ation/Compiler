@@ -100,7 +100,8 @@ namespace FE::AST
                     
                     if (initList->init_list && !initList->init_list->empty()) {
                         std::vector<VarValue> elements(totalSize, defaultValue);
-                        if (!checkArrayInitializer(*initList, elemType, elements, sym->arrayDims, 0, 0))
+                        size_t offset = 0;
+                        if (!checkArrayInitializer(*initList, elemType, elements, sym->arrayDims, 0, offset))
                         {
                             errors.push_back("Error: Invalid initializer structure for array at line " +
                                             std::to_string(node.init->line_num) + ", column " +

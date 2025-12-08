@@ -53,7 +53,7 @@ namespace FE::AST
         return result;
     }
 
-    bool ASTChecker::checkArrayInitializer(InitializerList& initList, Type* elemType, std::vector<VarValue>& elements, const std::vector<int>& arrayDims, size_t dimIndex, size_t offset)    
+    bool ASTChecker::checkArrayInitializer(InitializerList& initList, Type* elemType, std::vector<VarValue>& elements, const std::vector<int>& arrayDims, size_t dimIndex, size_t& offset)    
     {   
         bool res = true;
         if (dimIndex >= arrayDims.size())
@@ -67,21 +67,29 @@ namespace FE::AST
         for (size_t i = dimIndex + 1; i < arrayDims.size(); ++i)
             stride *= arrayDims[i];
 
-        int idx = 0;
-
         for (auto* subInit : *(initList.init_list))
         {
             auto* subInitList = dynamic_cast<InitializerList*>(subInit);
             if (subInitList)
             {
                 // 嵌套初始化
-                res &= checkArrayInitializer(*subInitList, elemType, elements, arrayDims, dimIndex + 1, offset + idx);
-                idx+=stride;
+                size_t startOffset = offset;
+                res &= checkArrayInitializer(*subInitList, elemType, elements, arrayDims, dimIndex + 1, offset);
+                if (subInitList->init_list->empty()) {
+                    // 空列表，跳过当前上下文对应的维度大小
+                    offset += stride; 
+                } else {
+                    // 非空列表，我们需要检查是否对齐
+                    size_t endOffset = startOffset + stride;
+                    if (offset < endOffset) {
+                        offset = endOffset;
+                    }
+                }
             }
             else
             {   
                 // 展平初始化
-                if (offset + idx > elements.size())
+                if (offset >= elements.size())
                 {
                     errors.push_back("Error: Too many initializers for array at line " +
                                     std::to_string(subInit->line_num) + ", column " +
@@ -89,8 +97,8 @@ namespace FE::AST
                     return false;
                 }
                 VarValue converted = convertType(subInit->attr.val.value, elemType);                
-                elements[offset + idx] = converted;
-                idx++;
+                elements[offset] = converted;
+                offset++;
             }
         }
        

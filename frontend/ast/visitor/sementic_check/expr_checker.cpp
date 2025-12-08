@@ -210,9 +210,11 @@ namespace FE::AST
                 errors.push_back("Error: Cannot assign to const variable " + leftValExpr->entry->getName() + " at line " + std::to_string(node.line_num) + ", column " + std::to_string(node.col_num) + ".");
                 return false;
             }
+            
+            // 更新变量的初始化状态和初始值
+            if(!varAttr->isInitialized)varAttr->initList.push_back(node.attr.val.value);
+            else varAttr->initList = {node.attr.val.value};
             varAttr->isInitialized = true;
-            varAttr->initList.push_back(node.attr.val.value);
-
             node.attr.val.isConstexpr = false;  // 赋值表达式不是编译期常量
             return res;
         }

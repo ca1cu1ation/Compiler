@@ -138,6 +138,30 @@ namespace ME::Analysis
         }
     }
 
+    std::vector<Block*> CFG::getSuccessors(Block* block) {
+        std::vector<Block*> result;
+        for (const auto& succs : G) {
+            for (auto* succ : succs) {
+                if (succ == block) {
+                    result.push_back(succ);
+                }
+            }
+        }
+        return result;
+    }
+
+    std::vector<Block*> CFG::getPredecessors(Block* block) {
+        std::vector<Block*> result;
+        for (const auto& preds : invG) {
+            for (auto* pred : preds) {
+                if (pred == block) {
+                    result.push_back(pred);
+                }
+            }
+        }
+        return result;
+    }
+
     template <>
     CFG* Manager::get<CFG>(Function& func)
     {
