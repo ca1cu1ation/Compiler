@@ -143,9 +143,8 @@ def _check_ir_syntax(target_file: str, src_file: str, test_name: str):
     print_test_status(test_name, "Checking IR syntax")
     res = subprocess.run(
         ["llvm-as", target_file, "-o", "/dev/null"],
-        stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, check=False)
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=False)
     if res.returncode != 0:
-        print(res.stderr.decode())  # 显示详细错误
         print_test_status(test_name, "\033[93mLLVM-IR Syntax Error\033[0m", final=True)
         return False
     return True

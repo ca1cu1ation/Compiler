@@ -9,6 +9,8 @@
 #include <middleend/module/ir_module.h>
 #include <middleend/pass/unify_return.h>
 #include <middleend/pass/adce.h>
+#include <middleend/pass/mem2reg.h>
+#include <middleend/pass/sccp.h>
 
 #include <backend/mir/m_module.h>
 #include <backend/target/registry.h>
@@ -346,8 +348,12 @@ int main(int argc, char** argv)
             // 下面这个 pass 可以作为参考，主要是示范如何通过cache获取分析pass的结果
             ME::UnifyReturnPass unifyReturnPass;
             ME::ADCEPass        adcePass;
-            
+            ME::Mem2RegPass     mem2regPass;
+            ME::SCCPPass        sccpPass;
+
             unifyReturnPass.runOnModule(m);
+            mem2regPass.runOnModule(m);
+            sccpPass.runOnModule(m);
             adcePass.runOnModule(m);
         }
 

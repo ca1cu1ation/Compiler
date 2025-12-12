@@ -32,7 +32,8 @@ namespace ME
         std::vector<Operand*> getUses(Instruction* inst); // 获取指令使用的操作数
         Instruction* getDef(Operand* op); // 获取操作数的定义指令
         
-        // 控制依赖
+        // 计算后支配边界
+        std::vector<int> immPostDom;
         void computePostDominance(Function& function, std::map<Block*, std::set<Block*>>& pdf);
     };
 }
