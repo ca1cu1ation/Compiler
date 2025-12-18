@@ -93,6 +93,10 @@ namespace ME
         {
             for (auto s : *node.stmts)
             {
+                if (curBlock && !curBlock->insts.empty() && curBlock->insts.back()->isTerminator())
+                {
+                    break;
+                }
                 apply(*this, *s, m);
             }
         }

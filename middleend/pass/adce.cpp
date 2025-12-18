@@ -164,9 +164,6 @@ namespace ME
                             // 不可达块将在后续的 CFG 清理或下一次 ADCE 中被移除
                         } else if (inst->opcode == Operator::BR_UNCOND) {
                             // BR_UNCOND 通常应该被标记为活跃（如果它所在的块活跃）
-                            // 如果它不活跃，说明它所在的块本身就是死代码的一部分？
-                            // 或者它是冗余的跳转？
-                            // 无论如何，保留它通常是安全的，或者可以删除它如果它是 fallthrough（但 IR 中没有 fallthrough）
                             // 这里我们选择保留，以免破坏 CFG
                         }
                         ++it;
@@ -362,6 +359,17 @@ namespace ME
 
         // 3. 映射 PDF
         // DomAnalyzer 的 dom_frontier 即为 PDF
+        // 注意：DomAnalyzer 计算的是 DF(u) = { w | u dominates a predecessor of w, but u does not strictly dominate w }
+        // 对于后支配，PDF(u) = { w | u post-dominates a successor of w, but u does not strictly post-dominate w }
+        // DomAnalyzer 的 dom_frontier 存储的是：对于节点 i，它的支配边界集合
+        // 在反向图中，这对应于 i 的后支配边界
+        // 所以 postDomAnalyzer.dom_frontier[i] 存储的是节点 i 的后支配边界
+        // 即 PDF(i) = postDomAnalyzer.dom_frontier[i]
+        // 但是，ADCE 需要的是：如果 block i 依赖于 block j 的控制流，那么 j 在 PDF(i) 中吗？
+        // 不，ADCE 的逻辑是：如果指令 I 在 block B 中，且 I 活跃，那么控制 B 执行的分支指令所在块 CD(B) 必须活跃。
+        // CD(B) 正是 B 的后支配边界 PDF(B)。
+        // 所以我们需要的是 map<Block* B, set<Block*> PDF(B)>
+        
         for(size_t i=0; i<postDomAnalyzer.dom_frontier.size(); ++i) {
             if (!cfg->id2block.count(i)) continue;
             Block* B = cfg->id2block[i];

@@ -96,6 +96,7 @@ namespace ME
             {
                 if (inst->opcode != Operator::RET) continue;
                 retInstructions.push_back(static_cast<RetInst*>(inst));
+                break;
             }
         }
 

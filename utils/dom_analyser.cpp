@@ -83,8 +83,8 @@ void DomAnalyzer::build(
     imm_dom.clear();
     imm_dom.resize(node_count);
 
-    int                 dfs_count = -1;
-    vector<int>         block_to_dfs(node_count, 0), dfs_to_block(node_count), parent(node_count, 0);
+    int                 dfs_count = 0;
+    vector<int>         block_to_dfs(node_count, 0), dfs_to_block(node_count + 1), parent(node_count, 0);
     vector<int>         semi_dom(node_count);
     vector<int>         dsu_parent(node_count), min_ancestor(node_count);
     vector<vector<int>> semi_children(node_count);
@@ -103,8 +103,8 @@ void DomAnalyzer::build(
         for (int next : working_graph[block])
             if (!block_to_dfs[next])
             {
-                dfs(next);
                 parent[next] = block;
+                dfs(next);
             }
     };
     dfs(virtual_source);
