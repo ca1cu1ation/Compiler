@@ -48,15 +48,19 @@ namespace BE
 
         void DAGBuilder::visit(ME::Module& module, SelectionDAG& dag)
         {
-            (void)module;
-            (void)dag;
-            TODO("实现 Module 级别的 DAG 构建：遍历函数，调用 visit(Function, dag) 完成构建");
+            for (auto* func : module.functions)
+            {
+                if (!func) continue;
+                visit(*func, dag);
+            }
         }
         void DAGBuilder::visit(ME::Function& func, SelectionDAG& dag)
         {
-            (void)func;
-            (void)dag;
-            TODO("实现 Function 级别的 DAG 构建：遍历基本块，调用 visit(Block, dag) 并维护 Chain 依赖");
+            for (auto& [bid, block] : func.blocks)
+            {
+                (void)bid;
+                visit(*block, dag);
+            }
         }
 
         SDValue DAGBuilder::getValue(ME::Operand* op, SelectionDAG& dag, BE::DataType* dtype)
@@ -91,15 +95,15 @@ namespace BE
                 {
                     // 任务：将全局符号映射为 SYMBOL 节点并返回
                     // 建议：使用 dag.getSymNode(ISD::SYMBOL, {BE::PTR}, {}, name)
-                    TODO("实现 GLOBAL 到 SYMBOL 节点的映射（返回全局符号地址）");
-                    return SDValue();
+                    auto  name = static_cast<ME::GlobalOperand*>(op)->name;
+                    return dag.getSymNode(static_cast<unsigned>(ISD::SYMBOL), {BE::PTR}, {}, name);                    
                 }
                 case ME::OperandType::LABEL:
                 {
                     // 任务：将标签操作数映射为 LABEL 节点（立即数携带标签 id）
                     // 建议：使用 dag.getImmNode(ISD::LABEL, {}, {}, labelId)
-                    TODO("实现 LABEL 到 LABEL 节点的映射（用于分支目标）");
-                    return SDValue();
+                    auto labelId = static_cast<ME::LabelOperand*>(op)->lnum;
+                    return dag.getImmNode(static_cast<unsigned>(ISD::LABEL), {}, {}, static_cast<int64_t>(labelId));
                 }
                 default: ERROR("Unsupported IR operand in DAGBuilder"); return SDValue();
             }
@@ -118,11 +122,21 @@ namespace BE
             if (isFloat)
             {
                 if (op == ME::Operator::FADD) return static_cast<uint32_t>(ISD::FADD);
-                TODO("补全浮点算术到 ISD 的映射（如 FSUB、FMUL、FDIV 等）");
+                if (op == ME::Operator::FSUB) return static_cast<uint32_t>(ISD::FSUB);
+                if (op == ME::Operator::FMUL) return static_cast<uint32_t>(ISD::FMUL);
+                if (op == ME::Operator::FDIV) return static_cast<uint32_t>(ISD::FDIV);
                 return static_cast<uint32_t>(ISD::FADD);
             }
             if (op == ME::Operator::ADD) return static_cast<uint32_t>(ISD::ADD);
-            TODO("补全整数算术到 ISD 的映射（如 SUB/MUL/DIV/MOD/SHL/ASHR/LSHR/AND/XOR 等）");
+            if (op == ME::Operator::SUB) return static_cast<uint32_t>(ISD::SUB);
+            if (op == ME::Operator::MUL) return static_cast<uint32_t>(ISD::MUL);
+            if (op == ME::Operator::DIV) return static_cast<uint32_t>(ISD::DIV);
+            if (op == ME::Operator::MOD) return static_cast<uint32_t>(ISD::MOD);
+            if (op == ME::Operator::SHL) return static_cast<uint32_t>(ISD::SHL);
+            if (op == ME::Operator::ASHR) return static_cast<uint32_t>(ISD::ASHR);
+            if (op == ME::Operator::LSHR) return static_cast<uint32_t>(ISD::LSHR);
+            if (op == ME::Operator::BITAND) return static_cast<uint32_t>(ISD::AND);
+            if (op == ME::Operator::BITXOR) return static_cast<uint32_t>(ISD::XOR);
             return static_cast<uint32_t>(ISD::ADD);
         }
 
@@ -185,7 +199,11 @@ namespace BE
             // 1) 计算 val 与 ptr 的 SDValue：val = getValue(..., mapType(inst.dt))，ptr = getValue(..., BE::PTR)
             // 2) 生成 STORE 节点：结果类型为 {TOKEN}，操作数顺序为 {currentChain_, val, ptr}
             // 3) 更新 currentChain_ = storeNode
-            TODO("实现 StoreInst 的 DAG 节点生成与 Chain 维护");
+            auto     vt  = mapType(inst.dt);
+            SDValue  val = getValue(inst.val, dag, vt);
+            SDValue  ptr = getValue(inst.ptr, dag, BE::PTR);
+            SDValue  node = dag.getNode(static_cast<unsigned>(ISD::STORE), {BE::TOKEN}, {currentChain_, val, ptr});
+            currentChain_ = node;
         }
 
         void DAGBuilder::visit(ME::ArithmeticInst& inst, SelectionDAG& dag)
@@ -203,14 +221,22 @@ namespace BE
         {
             // 任务：生成 ICMP 节点，结果类型为 I32，携带比较条件 imm
             // 提示：lhs/rhs 用 I32 作为 dtype；setImmI64(static_cast<int64_t>(inst.cond))
-            TODO("实现 IcmpInst 到 ISD::ICMP 的映射，设置条件并 setDef");
+            SDValue lhs  = getValue(inst.lhs, dag, BE::I32);
+            SDValue rhs  = getValue(inst.rhs, dag, BE::I32);
+            SDValue node = dag.getNode(static_cast<unsigned>(ISD::ICMP), {BE::I32}, {lhs, rhs});
+            node.getNode()->setImmI64(static_cast<int64_t>(inst.cond));
+            setDef(inst.res, node);
         }
 
         void DAGBuilder::visit(ME::FcmpInst& inst, SelectionDAG& dag)
         {
             // 任务：生成 FCMP 节点，结果类型为 I32，携带浮点比较条件 imm
             // 提示：lhs/rhs 用 F32 作为 dtype
-            TODO("实现 FcmpInst 到 ISD::FCMP 的映射，设置条件并 setDef");
+            SDValue lhs  = getValue(inst.lhs, dag, BE::F32);
+            SDValue rhs  = getValue(inst.rhs, dag, BE::F32);
+            SDValue node = dag.getNode(static_cast<unsigned>(ISD::FCMP), {BE::I32}, {lhs, rhs});
+            node.getNode()->setImmI64(static_cast<int64_t>(inst.cond));
+            setDef(inst.res, node);
         }
 
         void DAGBuilder::visit(ME::AllocaInst& inst, SelectionDAG& dag)
@@ -230,13 +256,18 @@ namespace BE
             // 任务：生成 BRCOND 节点
             // 要求：操作数顺序 [cond(I32), trueLabel(LABEL), falseLabel(LABEL)]
             // 注意：LABEL 节点请通过 getValue(label, dag) 获取
-            TODO("实现条件分支到 ISD::BRCOND 的映射");
+            SDValue cond      = getValue(inst.cond, dag, BE::I32);
+            SDValue trueLabel = getValue(inst.trueTar, dag, nullptr);
+            SDValue falseLabel = getValue(inst.falseTar, dag, nullptr);
+
+            dag.getNode(static_cast<unsigned>(ISD::BRCOND), {}, {cond, trueLabel, falseLabel});
         }
 
         void DAGBuilder::visit(ME::BrUncondInst& inst, SelectionDAG& dag)
         {
             // 任务：生成无条件分支 BR 节点，操作数为目标 LABEL
-            TODO("实现无条件分支到 ISD::BR 的映射");
+            SDValue target = getValue(inst.target, dag, nullptr);
+            dag.getNode(static_cast<unsigned>(ISD::BR), {}, {target});
         }
 
         void DAGBuilder::visit(ME::GlbVarDeclInst& inst, SelectionDAG& dag)
@@ -255,7 +286,26 @@ namespace BE
             // 3) 依次追加所有参数（用 mapType 推导参数类型作为 dtype）
             // 4) 有返回值：结果类型为 vt，setDef，并更新 currentChain_ = node
             //    无返回值：结果类型为 {}，同样更新 currentChain_
-            TODO("实现 CALL 的 DAG 节点生成（包含 Chain / SYMBOL / 参数与返回值处理）");
+            std::vector<SDValue> ops;
+            ops.push_back(currentChain_);
+            ops.push_back(dag.getSymNode(static_cast<unsigned>(ISD::SYMBOL), {BE::PTR}, {}, inst.funcName));
+
+            for (auto& [at, ao] : inst.args)
+            {
+                auto* argTy = mapType(at);
+                ops.push_back(getValue(ao, dag, argTy));
+            }
+
+            std::vector<DataType*> vts;
+            bool                   hasRet = inst.retType != ME::DataType::VOID;
+            if (hasRet) vts.push_back(mapType(inst.retType));
+            vts.push_back(BE::TOKEN);
+
+            SDValue node = dag.getNode(static_cast<unsigned>(ISD::CALL), vts, ops);
+
+            if (hasRet) setDef(inst.res, SDValue(node.getNode(), 0));
+
+            currentChain_ = SDValue(node.getNode(), static_cast<uint32_t>(vts.size() - 1));
         }
 
         void DAGBuilder::visit(ME::FuncDeclInst& inst, SelectionDAG& dag)
@@ -294,33 +344,71 @@ namespace BE
             // 1) 取 base 指针（BE::PTR）
             // 2) 将各维度下标组合为元素偏移（必要时做 ZEXT 到 I64），再乘以元素字节大小，最后与基址相加
             // 3) 产出 BE::PTR 类型的地址结果并 setDef
-            TODO("实现 GEP 指令到 DAG 地址计算（base + scaled offset）");
+            SDValue base = getValue(inst.basePtr, dag, BE::PTR);
+
+            int elemSize = elemByteSize(inst.dt);
+            SDValue offset = dag.getConstantI64(0, BE::I64);
+
+            auto dims = inst.dims;
+            for (size_t i = 0; i < inst.idxs.size(); ++i)
+            {
+                SDValue idxVal = getValue(inst.idxs[i], dag, BE::I32);
+                if (idxVal.getNode() && idxVal.getNode()->getValueType(0) == BE::I32)
+                {
+                    idxVal = dag.getNode(static_cast<unsigned>(ISD::ZEXT), {BE::I64}, {idxVal});
+                }
+
+                int strideElems = 1;
+                for (size_t j = i + 1; j < dims.size(); ++j) strideElems *= dims[j];
+                int strideBytes = strideElems * elemSize;
+
+                SDValue strideNode = dag.getConstantI64(strideBytes, BE::I64);
+                SDValue scaled     = dag.getNode(static_cast<unsigned>(ISD::MUL), {BE::I64}, {idxVal, strideNode});
+                offset             = dag.getNode(static_cast<unsigned>(ISD::ADD), {BE::I64}, {offset, scaled});
+            }
+
+            SDValue addr = dag.getNode(static_cast<unsigned>(ISD::ADD), {BE::PTR}, {base, offset});
+            setDef(inst.res, addr);
         }
 
         void DAGBuilder::visit(ME::ZextInst& inst, SelectionDAG& dag)
         {
             // 任务：实现零扩展 ZEXT（from -> to）
             // 提示：结果类型用 mapType(inst.to)
-            TODO("实现 ZextInst 到 ISD::ZEXT 的映射，并 setDef");
+            auto* dstTy = mapType(inst.to);
+            SDValue src = getValue(inst.src, dag, mapType(inst.from));
+            SDValue node = dag.getNode(static_cast<unsigned>(ISD::ZEXT), {dstTy}, {src});
+            setDef(inst.dest, node);
         }
 
         void DAGBuilder::visit(ME::SI2FPInst& inst, SelectionDAG& dag)
         {
             // 任务：实现 SITOFP（有符号整型到浮点）
-            TODO("实现 SI2FP 到 ISD::SITOFP 的映射，并 setDef");
+            SDValue src  = getValue(inst.src, dag, BE::I32);
+            SDValue node = dag.getNode(static_cast<unsigned>(ISD::SITOFP), {BE::F32}, {src});
+            setDef(inst.dest, node);
         }
 
         void DAGBuilder::visit(ME::FP2SIInst& inst, SelectionDAG& dag)
         {
             // 任务：实现 FPTOSI（浮点到有符号整型）
-            TODO("实现 FP2SI 到 ISD::FPTOSI 的映射，并 setDef");
+            SDValue src  = getValue(inst.src, dag, BE::F32);
+            SDValue node = dag.getNode(static_cast<unsigned>(ISD::FPTOSI), {BE::I32}, {src});
+            setDef(inst.dest, node);
         }
 
         void DAGBuilder::visit(ME::PhiInst& inst, SelectionDAG& dag)
         {
             // 任务：为 PHI 构造操作数列表（成对的 LABEL 与 VALUE），结果类型为 mapType(inst.dt)
             // 提示：ops 形如 [LABEL0, VAL0, LABEL1, VAL1, ...]
-            TODO("实现 PhiInst 到 ISD::PHI 的映射，并 setDef");
+            std::vector<SDValue> ops;
+            for (auto& [label, val] : inst.incomingVals)
+            {
+                ops.push_back(getValue(label, dag, nullptr));
+                ops.push_back(getValue(val, dag, mapType(inst.dt)));
+            }
+            SDValue node = dag.getNode(static_cast<unsigned>(ISD::PHI), {mapType(inst.dt)}, ops);
+            setDef(inst.res, node);
         }
 
     }  // namespace DAG

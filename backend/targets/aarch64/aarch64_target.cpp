@@ -43,32 +43,31 @@ namespace BE::Targeting::AArch64
         static BE::Targeting::AArch64::RegInfo      s_regInfo;
         BE::Targeting::setTargetInstrAdapter(&s_adapter);
 
-        TODO("选择一种 Instruction Selector 实现，并完成指令选择");
-        // BE::AArch64::DAGIsel isel(ir, backend, this);
-        // BE::AArch64::IRIsel isel(ir, backend, this);
-        // isel.run();
+        // 选择 DAG 指令选择路径
+        BE::AArch64::DAGIsel isel(ir, backend, this);
+        isel.run();
 
         // Pre-RA
         {
-            BE::AArch64::Passes::Lowering::FrameLoweringPass fl;
-            fl.runOnModule(*backend);
-
             // 对实现了 mem2reg 优化的同学，还需完成 Phi Elimination
-            // BE::AArch64::Passes::Lowering::PhiEliminationPass phiElim;
-            // phiElim.runOnModule(*backend, &s_adapter);
+            BE::AArch64::Passes::Lowering::PhiEliminationPass phiElim;
+            phiElim.runOnModule(*backend, &s_adapter);
 
-            TODO("如有需要，需在寄存器分配前完成其它伪指令的消解，如移动指令的消解");
+            // 其他伪指令消解（如有需要）可在此处加入
         }
 
         // RA
         {
-            TODO("使用你实现的寄存器分配器进行寄存器分配");
-            // BE::RA::LinearScanRA ra;
-            // ra.allocate(*backend, s_regInfo);
+            BE::RA::LinearScanRA ra;
+            ra.allocate(*backend, s_regInfo);
         }
 
         // Post-RA
         {
+            // Frame layout must happen after RA, because RA may create spill slots.
+            BE::AArch64::Passes::Lowering::FrameLoweringPass fl;
+            fl.runOnModule(*backend);
+
             BE::AArch64::Passes::Lowering::StackLoweringPass sl;
             sl.runOnModule(*backend);
         }

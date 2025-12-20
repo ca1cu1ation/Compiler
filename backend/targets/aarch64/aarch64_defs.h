@@ -252,13 +252,25 @@ namespace BE::AArch64
         Operator movop;
 
         if (dst->dt->equal(src->dt))
-            movop = Operator::MOV;
+        {
+            movop = (dst->dt->dt == DataType::Type::FLOAT) ? Operator::FMOV : Operator::MOV;
+        }
         else if (dst->dt->equal(I64) && src->dt->equal(I32))
-            movop = Operator::UXTW;
+        {
+            movop = Operator::UXTW;  // zero-extend 32 -> 64
+        }
+        else if (dst->dt->dl == src->dt->dl)
+        {
+            // Same width but different kind (e.g. int64 <-> token64). Use MOV/FMOV conservatively.
+            bool useFmov = dst->dt->dt == DataType::Type::FLOAT || src->dt->dt == DataType::Type::FLOAT;
+            movop       = useFmov ? Operator::FMOV : Operator::MOV;
+        }
         else
+        {
             TODO("Unsupported move operand types for %s to %s",
                 src->dt ? src->dt->toString().c_str() : "null",
                 dst->dt ? dst->dt->toString().c_str() : "null");
+        }
 
         Instr* inst = new Instr(movop);
         inst->operands.push_back(dst);

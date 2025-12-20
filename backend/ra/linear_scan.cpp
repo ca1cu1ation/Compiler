@@ -15,6 +15,7 @@
 #include <unordered_map>
 #include <deque>
 #include <algorithm>
+#include <optional>
 
 namespace BE::RA
 {
@@ -57,22 +58,58 @@ namespace BE::RA
                 if (s >= e) return;
                 segs.emplace_back(s, e);
             }
-            void merge() { TODO("考虑如何合并区间"); }
+            void merge()
+            {
+                if (segs.empty()) return;
+                std::sort(segs.begin(), segs.end(), [](const Segment& a, const Segment& b) {
+                    if (a.start != b.start) return a.start < b.start;
+                    return a.end < b.end;
+                });
+                std::vector<Segment> merged;
+                merged.push_back(segs[0]);
+                for (size_t i = 1; i < segs.size(); ++i)
+                {
+                    auto& last = merged.back();
+                    if (segs[i].start <= last.end)
+                        last.end = std::max(last.end, segs[i].end);
+                    else
+                        merged.push_back(segs[i]);
+                }
+                segs.swap(merged);
+            }
         };
 
         struct IntervalOrder
         {
-            bool operator()(const Interval* a, const Interval* b) const { TODO("实现 IntervalOrder 的比较"); }
+            bool operator()(const Interval* a, const Interval* b) const
+            {
+                int astart = a->segs.empty() ? 0 : a->segs.front().start;
+                int bstart = b->segs.empty() ? 0 : b->segs.front().start;
+                if (astart != bstart) return astart < bstart;
+                int aend = a->segs.empty() ? 0 : a->segs.back().end;
+                int bend = b->segs.empty() ? 0 : b->segs.back().end;
+                return aend < bend;
+            }
         };
     }  // namespace
 
     static std::vector<int> buildAllocatableInt(const BE::Targeting::TargetRegInfo& ri)
     {
-        TODO("收集可分配的 GPR 集合");
+        std::vector<int> res;
+        auto reserved = ri.reservedRegs();
+        auto ints     = ri.intRegs();
+        for (int r : ints)
+            if (std::find(reserved.begin(), reserved.end(), r) == reserved.end()) res.push_back(r);
+        return res;
     }
     static std::vector<int> buildAllocatableFloat(const BE::Targeting::TargetRegInfo& ri)
     {
-        TODO("收集可分配的 FPR 集合");
+        std::vector<int> res;
+        auto reserved = ri.reservedRegs();
+        auto floats   = ri.floatRegs();
+        for (int r : floats)
+            if (std::find(reserved.begin(), reserved.end(), r) == reserved.end()) res.push_back(r);
+        return res;
     }
 
     void LinearScanRA::allocateFunction(BE::Function& func, const BE::Targeting::TargetRegInfo& regInfo)
@@ -119,7 +156,22 @@ namespace BE::RA
         // 如何做：可直接用 MIR::CFGBuilder 生成 CFG，再转换为 succs 映射。
         BE::MIR::CFG*                                 cfg = nullptr;
         std::map<BE::Block*, std::vector<BE::Block*>> succs;
-        TODO("RA: 构建 CFG 并获取后继关系");
+        {
+            BE::MIR::CFGBuilder builder(BE::Targeting::g_adapter);
+            cfg = builder.buildCFGForFunction(&func);
+            if (cfg)
+            {
+                for (auto& [bid, block] : func.blocks)
+                {
+                    std::vector<BE::Block*> outs;
+                    for (auto succId : cfg->graph_id[bid])
+                    {
+                        if (func.blocks.count(succId)) outs.push_back(func.blocks[succId]);
+                    }
+                    succs[block] = std::move(outs);
+                }
+            }
+        }
 
         // ============================================================================
         // 活跃性分析（IN/OUT）
@@ -159,26 +211,257 @@ namespace BE::RA
         // ============================================================================
         // 作用：得到每个 vreg 的若干 [start,end) 段并合并（interval.merge()）。
         // 如何做：对每个基本块，反向遍历其指令序列，根据 IN/OUT/uses/defs 更新段的开始/结束。
-        TODO("RA: 构建活跃区间");
+        std::map<BE::Register, Interval> intervals;
+
+        // 辅助函数
+        auto ensureInterval = [&](const BE::Register& v) -> Interval& {
+            auto it = intervals.find(v);
+            if (it == intervals.end())
+            {
+                Interval iv;
+                iv.vreg = v;
+                auto [nit, _] = intervals.emplace(v, std::move(iv));
+                return nit->second;
+            }
+            return it->second;
+        };
+
+        // block live-out start map
+        for (auto& [bid, block] : func.blocks)
+        {
+            (void)bid;
+            int start = blockRange[block].first;
+            int end   = blockRange[block].second;
+
+            std::map<BE::Register, int> liveBeg;
+            auto outSet = OUT[block];
+            for (auto& r : outSet)
+                if (r.isVreg) liveBeg[r] = end;
+
+            for (int id = end - 1; id >= start; --id)
+            {
+                auto [b, it] = id2iter[id];
+                (void)b;
+                std::vector<BE::Register> uses, defs;
+                BE::Targeting::g_adapter->enumUses(*it, uses);
+                BE::Targeting::g_adapter->enumDefs(*it, defs);
+
+                // defs: close live ranges
+                for (auto& d : defs)
+                {
+                    if (!d.isVreg) continue;
+                    int segEnd = liveBeg.count(d) ? liveBeg[d] : (id + 1);
+                    ensureInterval(d).addSegment(id, segEnd);
+                    liveBeg.erase(d);
+                }
+
+                // uses: extend live
+                for (auto& u : uses)
+                {
+                    if (!u.isVreg) continue;
+                    auto itb = liveBeg.find(u);
+                    if (itb == liveBeg.end()) liveBeg[u] = id + 1;
+                    else itb->second = std::max(itb->second, id + 1);
+                }
+            }
+
+            // remaining live at block entry
+            for (auto& [r, endPos] : liveBeg)
+                ensureInterval(r).addSegment(start, endPos);
+        }
+
+        // 合并并标记跨调用
+        for (auto& [r, iv] : intervals)
+        {
+            iv.merge();
+            for (int cp : callPoints)
+                for (auto& s : iv.segs)
+                    if (s.start <= cp && cp < s.end) iv.crossesCall = true;
+        }
 
         // ============================================================================
         // 线性扫描主循环
         // ============================================================================
         // 作用：按区间起点排序；进入新区间前，先从活动集合 active 移除“已结束”的区间；
         // 然后尝试分配空闲物理寄存器；若无可用，执行溢出策略（如“溢出结束点更远”的区间）。
-        auto allIntRegs   = buildAllocatableInt(regInfo);
-        auto allFloatRegs = buildAllocatableFloat(regInfo);
-        TODO("RA: 实现 active 维护、空闲物理寄存器选择/冲突检测、溢出策略与记录（assignedPhys / spillFrameIndex）");
+        auto allIntRegs       = buildAllocatableInt(regInfo);
+        auto allFloatRegs     = buildAllocatableFloat(regInfo);
+        auto scratchIntRegs   = allIntRegs;
+        auto scratchFloatRegs = allFloatRegs;
+        std::map<BE::Register, int> assignedPhys;
+        std::map<BE::Register, int> spillFI;
 
-        // ============================================================================
+        std::vector<Interval*> intIntervals;
+        std::vector<Interval*> floatIntervals;
+        for (auto& [r, iv] : intervals)
+        {
+            if (r.dt == BE::F32 || r.dt == BE::F64)
+                floatIntervals.push_back(&iv);
+            else
+                intIntervals.push_back(&iv);
+        }
+
+        auto assignClass = [&](std::vector<Interval*>& work, std::vector<int>& freeRegs, const std::vector<int>& preferredForCalls) {
+            std::sort(work.begin(), work.end(), IntervalOrder());
+            std::vector<std::pair<Interval*, int>> active;
+
+            auto takePreferred = [&](bool wantPreferred) -> std::optional<int> {
+                if (freeRegs.empty()) return std::nullopt;
+                if (!wantPreferred || preferredForCalls.empty())
+                {
+                    int preg = freeRegs.back();
+                    freeRegs.pop_back();
+                    return preg;
+                }
+
+                for (auto it = freeRegs.begin(); it != freeRegs.end(); ++it)
+                {
+                    if (std::find(preferredForCalls.begin(), preferredForCalls.end(), *it) == preferredForCalls.end()) continue;
+                    int preg = *it;
+                    freeRegs.erase(it);
+                    return preg;
+                }
+
+                int preg = freeRegs.back();
+                freeRegs.pop_back();
+                return preg;
+            };
+
+            auto expire = [&](int curStart) {
+                auto it = active.begin();
+                while (it != active.end())
+                {
+                    int end = it->first->segs.back().end;
+                    if (end <= curStart)
+                    {
+                        freeRegs.push_back(it->second);
+                        it = active.erase(it);
+                    }
+                    else
+                        ++it;
+                }
+            };
+
+            for (auto* iv : work)
+            {
+                if (iv->segs.empty()) continue;
+                int start = iv->segs.front().start;
+                expire(start);
+
+                if (!freeRegs.empty())
+                {
+                    auto pregOpt = takePreferred(iv->crossesCall);
+                    if (!pregOpt.has_value())
+                    {
+                        int fi = func.frameInfo.createSpillSlot(8);
+                        spillFI[iv->vreg] = fi;
+                        continue;
+                    }
+                    int preg = *pregOpt;
+                    assignedPhys[iv->vreg] = preg;
+                    active.push_back({iv, preg});
+                }
+                else
+                {
+                    int fi = func.frameInfo.createSpillSlot(8);
+                    spillFI[iv->vreg] = fi;
+                }
+            }
+        };
+
+        assignClass(intIntervals, allIntRegs, regInfo.calleeSavedIntRegs());
+        assignClass(floatIntervals, allFloatRegs, regInfo.calleeSavedFloatRegs());
+
+        // =========================================================================
         // 重写 MIR（插入 reload/spill，替换 use/def）
-        // ============================================================================
-        // 作用：将未分配物理寄存器的 use/def 改写为使用 scratch + FILoad/FIStore（由 Adapter 注入）。
-        // 如何做：
-        // - 对每条指令枚举 uses：若该 vreg 分配了物理寄存器，则直接替换；
-        //   否则在指令前插入 reload 到一个 scratch，然后用 scratch 替换 use。
-        // - 对每条指令枚举 defs：若分配了物理寄存器则直接替换；
-        //   否则先将 def 写到一个 scratch，再在指令后插入 spill 到对应 FI。
-        TODO("RA: 调用 Adapter 的接口改写指令");
+        // =========================================================================
+        // 注意：block->insts 是 std::deque；在其上 insert 会使迭代器失效。
+        // 因此这里采用“重建指令列表”的方式进行改写，避免迭代器失效导致漏改写/未分配 vreg。
+
+        auto pickScratch = [&](BE::DataType* dt, std::set<int>& used) -> std::optional<BE::Register> {
+            const bool isFloat = (dt == BE::F32 || dt == BE::F64);
+            // Use dedicated scratch regs reserved from allocation:
+            // - Int: x16/x17 (or w16/w17 for I32)
+            // - Float: d16/d17 (or s16/s17 for F32)
+            static const int kScratchIds[2] = {16, 17};
+            for (int id : kScratchIds)
+            {
+                if (used.count(id)) continue;
+                used.insert(id);
+                BE::DataType* chosenDt = dt;
+                if (chosenDt == nullptr) chosenDt = isFloat ? BE::F64 : BE::I64;
+                return BE::Register(id, chosenDt, false);
+            }
+            return std::nullopt;
+        };
+
+        for (auto& [bid, block] : func.blocks)
+        {
+            (void)bid;
+            if (!block) continue;
+
+            std::deque<BE::MInstruction*> rewritten;
+            rewritten.clear();
+
+            for (auto* inst : block->insts)
+            {
+                if (!inst)
+                {
+                    rewritten.push_back(inst);
+                    continue;
+                }
+
+                std::vector<BE::Register> uses, defs;
+                BE::Targeting::g_adapter->enumUses(inst, uses);
+                BE::Targeting::g_adapter->enumDefs(inst, defs);
+
+                std::set<int> usedScratchIds;
+
+                // Rewrite uses: insert reloads before inst
+                for (auto& u : uses)
+                {
+                    if (!u.isVreg) continue;
+                    auto ap = assignedPhys.find(u);
+                    if (ap != assignedPhys.end())
+                    {
+                        BE::Targeting::g_adapter->replaceUse(inst, u, BE::Register(ap->second, u.dt, false));
+                        continue;
+                    }
+                    auto sp = spillFI.find(u);
+                    if (sp == spillFI.end()) continue;
+                    auto scratch = pickScratch(u.dt, usedScratchIds);
+                    if (!scratch.has_value()) continue;
+                    rewritten.push_back(new BE::FILoadInst(*scratch, sp->second, ""));
+                    BE::Targeting::g_adapter->replaceUse(inst, u, *scratch);
+                }
+
+                // Rewrite defs: replace def with scratch/phys, and insert spills after inst
+                // (we buffer spills and append after the instruction)
+                std::vector<std::pair<BE::Register, int>> spills;
+                spills.reserve(defs.size());
+                for (auto& d : defs)
+                {
+                    if (!d.isVreg) continue;
+                    auto ap = assignedPhys.find(d);
+                    if (ap != assignedPhys.end())
+                    {
+                        BE::Targeting::g_adapter->replaceDef(inst, d, BE::Register(ap->second, d.dt, false));
+                        continue;
+                    }
+                    auto sp = spillFI.find(d);
+                    if (sp == spillFI.end()) continue;
+                    auto scratch = pickScratch(d.dt, usedScratchIds);
+                    if (!scratch.has_value()) continue;
+                    BE::Targeting::g_adapter->replaceDef(inst, d, *scratch);
+                    spills.emplace_back(*scratch, sp->second);
+                }
+
+                rewritten.push_back(inst);
+                for (auto& [scratchReg, fi] : spills)
+                    rewritten.push_back(new BE::FIStoreInst(scratchReg, fi, ""));
+            }
+
+            block->insts.swap(rewritten);
+        }
     }
 }  // namespace BE::RA
