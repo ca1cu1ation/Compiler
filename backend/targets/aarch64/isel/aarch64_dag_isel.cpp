@@ -426,7 +426,14 @@ namespace BE::AArch64
                 {
                     baseNode = lhsBase;
                     offset   = lhsOffset + rhs->getImmI64();
-                    return true;
+                    // AArch64 LDR/STR immediate offset limits:
+                    // - Unscaled: [-256, 255]
+                    // - Scaled (unsigned): [0, 32760] (aligned)
+                    // For simplicity, we only accept small offsets here to be safe.
+                    // Large offsets will be materialized into a register by the fallback path.
+                    if (offset >= -256 && offset <= 255) return true;
+                    if (offset >= 0 && offset <= 4095 && (offset % 4 == 0)) return true; // Rough check for aligned
+                    return false;
                 }
                 return false;
             }
@@ -441,7 +448,9 @@ namespace BE::AArch64
                 {
                     baseNode = rhsBase;
                     offset   = rhsOffset + lhs->getImmI64();
-                    return true;
+                    if (offset >= -256 && offset <= 255) return true;
+                    if (offset >= 0 && offset <= 4095 && (offset % 4 == 0)) return true;
+                    return false;
                 }
                 return false;
             }
@@ -483,7 +492,17 @@ namespace BE::AArch64
             if (!lbNode || !valNode) continue;
 
             int   labelId = lbNode->hasImmI64() ? static_cast<int>(lbNode->getImmI64()) : 0;
-            auto* valOp  = new RegOperand(getOperandReg(valNode, m_block));
+            
+            Operand* valOp = nullptr;
+            auto     opc   = static_cast<DAG::ISD>(valNode->getOpcode());
+            if (opc == DAG::ISD::CONST_I32 || opc == DAG::ISD::CONST_I64)
+            {
+                valOp = new ImmeOperand(static_cast<int>(valNode->getImmI64()));
+            }
+            else
+            {
+                valOp = new RegOperand(getOperandReg(valNode, m_block));
+            }
             phi->incomingVals[labelId] = valOp;
         }
 
@@ -515,11 +534,52 @@ namespace BE::AArch64
         Operator op;
         bool     isFloat = (dst.dt == BE::F32 || dst.dt == BE::F64);
 
+        if (!isFloat && dst.dt == BE::I32)
+        {
+            if (lhsReg.dt == BE::I64) lhsReg = Register(lhsReg.rId, BE::I32, lhsReg.isVreg);
+            if (rhsReg.dt == BE::I64) rhsReg = Register(rhsReg.rId, BE::I32, rhsReg.isVreg);
+        }
+
         switch (opcode)
         {
             case DAG::ISD::ADD: op = isFloat ? Operator::FADD : Operator::ADD; break;
             case DAG::ISD::SUB: op = isFloat ? Operator::FSUB : Operator::SUB; break;
-            case DAG::ISD::MUL: op = isFloat ? Operator::FMUL : Operator::MUL; break;
+            case DAG::ISD::MUL:
+            {
+                if (!isFloat)
+                {
+                    auto isPowerOf2 = [](int64_t n) { return n > 0 && (n & (n - 1)) == 0; };
+                    auto log2       = [](int64_t n) {
+                        int s = 0;
+                        while ((n >> s) > 1) s++;
+                        return s;
+                    };
+
+                    auto rhsOp = static_cast<DAG::ISD>(rhs->getOpcode());
+                    if ((rhsOp == DAG::ISD::CONST_I32 || rhsOp == DAG::ISD::CONST_I64) &&
+                        rhs->hasImmI64() && isPowerOf2(rhs->getImmI64()))
+                    {
+                        m_block->insts.push_back(createInstr3(Operator::LSL,
+                            new RegOperand(dst),
+                            new RegOperand(lhsReg),
+                            new ImmeOperand(log2(rhs->getImmI64()))));
+                        return;
+                    }
+
+                    auto lhsOp = static_cast<DAG::ISD>(lhs->getOpcode());
+                    if ((lhsOp == DAG::ISD::CONST_I32 || lhsOp == DAG::ISD::CONST_I64) &&
+                        lhs->hasImmI64() && isPowerOf2(lhs->getImmI64()))
+                    {
+                        m_block->insts.push_back(createInstr3(Operator::LSL,
+                            new RegOperand(dst),
+                            new RegOperand(rhsReg),
+                            new ImmeOperand(log2(lhs->getImmI64()))));
+                        return;
+                    }
+                }
+                op = isFloat ? Operator::FMUL : Operator::MUL;
+                break;
+            }
             case DAG::ISD::DIV: op = isFloat ? Operator::FDIV : Operator::SDIV; break;
             case DAG::ISD::FADD: op = Operator::FADD; break;
             case DAG::ISD::FSUB: op = Operator::FSUB; break;

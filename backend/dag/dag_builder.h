@@ -94,7 +94,7 @@ namespace BE
              * 将 IR 指令的结果（如 %3 = add %1, %2 中的 %3）
              * 映射到对应的 DAG 节点（ADD 节点），存入 reg_value_map_。
              */
-            void setDef(ME::Operand* res, const SDValue& val);
+            void setDef(ME::Operand* res, const SDValue& val, SelectionDAG& dag);
 
             BE::DataType* mapType(ME::DataType t);
             uint32_t      mapArithmeticOpcode(ME::Operator op, bool isFloat);

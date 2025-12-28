@@ -323,7 +323,7 @@ int main(int argc, char** argv)
          * 提示:
          * - 可先实现字面量、简单算术与顺序语句, 再逐步支持数组与控制流
          * - 通过 -llvm 输出验证 IR 是否符合预期
-         * 单个中间代码生成bin/compiler -llvm testcase/functional/Basic/1_bang.sy -o test_output/test.ll
+         * 单个中间代码生成bin/compiler -llvm testcase/parser/test.sy -o test_output/test.ll
          * 测试脚本测试python3 test.py --stage=llvm --group={Basic, Advanced} --opt={0, 1, 2}
          */
         ME::ASTCodeGen codegen(checker.getGlbSymbols(), checker.getFuncDecls());
@@ -411,6 +411,8 @@ int main(int argc, char** argv)
          *     (gdb) target remote:{port}
          *     ```
          *     gdb 的使用相信大家在 OS 课上已经有所了解，这里就略过。
+         * 单个目标代码生成./bin/compiler -S -O1 test.sy -o test_O1.s -march aarch64
+         * 测试脚本测试python3 test.py --stage={arm, riscv} --group={Basic, Advanced} --opt={0, 1, 2} 
          */
         BE::Module backendModule;
         auto*      tgt = BE::Targeting::TargetRegistry::getTarget(march);

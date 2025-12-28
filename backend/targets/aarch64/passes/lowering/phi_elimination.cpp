@@ -162,19 +162,28 @@ namespace BE::AArch64::Passes::Lowering
 
             // predId -> copies for that incoming edge
             std::map<uint32_t, std::vector<Copy>> copiesPerPred;
+            std::map<uint32_t, std::vector<BE::MInstruction*>> immMovesPerPred;
+            std::set<uint32_t> preds;
+
             for (auto* phi : phis)
             {
                 Register dst = phi->resReg;
                 for (auto& [predId, op] : phi->incomingVals)
                 {
-                    auto* rop = dynamic_cast<BE::RegOperand*>(op);
-                    if (!rop) continue;
-                    copiesPerPred[predId].push_back({dst, rop->reg});
+                    preds.insert(predId);
+                    if (auto* rop = dynamic_cast<BE::RegOperand*>(op))
+                    {
+                        copiesPerPred[predId].push_back({dst, rop->reg});
+                    }
+                    else if (auto* iop = dynamic_cast<BE::AArch64::ImmeOperand*>(op))
+                    {
+                        immMovesPerPred[predId].push_back(BE::AArch64::createMove(new BE::RegOperand(dst), new BE::AArch64::ImmeOperand(iop->value), LOC_STR));
+                    }
                 }
             }
 
             // For each predecessor edge, insert copies.
-            for (auto& [predId, copies] : copiesPerPred)
+            for (uint32_t predId : preds)
             {
                 if (!func->blocks.count(predId)) continue;
                 auto* predBlock = func->blocks[predId];
@@ -216,7 +225,10 @@ namespace BE::AArch64::Passes::Lowering
                     insertBlock = func->blocks[splitId];
                 }
 
-                auto seq = materializeParallelCopies(copies);
+                auto seq = materializeParallelCopies(copiesPerPred[predId]);
+                auto& imms = immMovesPerPred[predId];
+                seq.insert(seq.end(), imms.begin(), imms.end());
+
                 insertMovesBeforeTerminator(insertBlock, seq, adapter);
             }
 

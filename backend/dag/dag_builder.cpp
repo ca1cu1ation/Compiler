@@ -109,12 +109,23 @@ namespace BE
             }
         }
 
-        void DAGBuilder::setDef(ME::Operand* res, const SDValue& val)
+        void DAGBuilder::setDef(ME::Operand* res, const SDValue& val, SelectionDAG& dag)
         {
             if (!res || res->getType() != ME::OperandType::REG) return;
             size_t regId          = res->getRegNum();
-            reg_value_map_[regId] = val;
-            if (val.getNode()) val.getNode()->setIRRegId(regId);
+            
+            SDValue finalVal = val;
+            if (val.getNode()) {
+                if (val.getNode()->hasIRRegId() && val.getNode()->getIRRegId() != regId) {
+                    std::vector<BE::DataType*> vts;
+                    vts.push_back(val.getNode()->getValueType(val.getResNo()));
+                    finalVal = dag.getNode(static_cast<unsigned>(ISD::COPY), vts, {val});
+                    finalVal.getNode()->setIRRegId(regId);
+                } else {
+                    val.getNode()->setIRRegId(regId);
+                }
+            }
+            reg_value_map_[regId] = finalVal;
         }
 
         uint32_t DAGBuilder::mapArithmeticOpcode(ME::Operator op, bool isFloat)
@@ -188,7 +199,7 @@ namespace BE
             SDValue ptr = getValue(inst.ptr, dag, BE::PTR);
             // LOAD: (Chain, Address) -> (Value, Chain)
             SDValue node = dag.getNode(static_cast<unsigned>(ISD::LOAD), {vt, BE::TOKEN}, {currentChain_, ptr});
-            setDef(inst.res, SDValue(node.getNode(), 0));  // Value is result #0
+            setDef(inst.res, SDValue(node.getNode(), 0), dag);  // Value is result #0
             currentChain_ = SDValue(node.getNode(), 1);    // Chain is result #1
         }
 
@@ -214,7 +225,7 @@ namespace BE
             SDValue  rhs  = getValue(inst.rhs, dag, vt);
             uint32_t opc  = mapArithmeticOpcode(inst.opcode, f);
             SDValue  node = dag.getNode(opc, {vt}, {lhs, rhs});
-            setDef(inst.res, node);
+            setDef(inst.res, node, dag);
         }
 
         void DAGBuilder::visit(ME::IcmpInst& inst, SelectionDAG& dag)
@@ -225,7 +236,7 @@ namespace BE
             SDValue rhs  = getValue(inst.rhs, dag, BE::I32);
             SDValue node = dag.getNode(static_cast<unsigned>(ISD::ICMP), {BE::I32}, {lhs, rhs});
             node.getNode()->setImmI64(static_cast<int64_t>(inst.cond));
-            setDef(inst.res, node);
+            setDef(inst.res, node, dag);
         }
 
         void DAGBuilder::visit(ME::FcmpInst& inst, SelectionDAG& dag)
@@ -236,7 +247,7 @@ namespace BE
             SDValue rhs  = getValue(inst.rhs, dag, BE::F32);
             SDValue node = dag.getNode(static_cast<unsigned>(ISD::FCMP), {BE::I32}, {lhs, rhs});
             node.getNode()->setImmI64(static_cast<int64_t>(inst.cond));
-            setDef(inst.res, node);
+            setDef(inst.res, node, dag);
         }
 
         void DAGBuilder::visit(ME::AllocaInst& inst, SelectionDAG& dag)
@@ -303,7 +314,7 @@ namespace BE
 
             SDValue node = dag.getNode(static_cast<unsigned>(ISD::CALL), vts, ops);
 
-            if (hasRet) setDef(inst.res, SDValue(node.getNode(), 0));
+            if (hasRet) setDef(inst.res, SDValue(node.getNode(), 0), dag);
 
             currentChain_ = SDValue(node.getNode(), static_cast<uint32_t>(vts.size() - 1));
         }
@@ -368,7 +379,7 @@ namespace BE
             }
 
             SDValue addr = dag.getNode(static_cast<unsigned>(ISD::ADD), {BE::PTR}, {base, offset});
-            setDef(inst.res, addr);
+            setDef(inst.res, addr, dag);
         }
 
         void DAGBuilder::visit(ME::ZextInst& inst, SelectionDAG& dag)
@@ -378,7 +389,7 @@ namespace BE
             auto* dstTy = mapType(inst.to);
             SDValue src = getValue(inst.src, dag, mapType(inst.from));
             SDValue node = dag.getNode(static_cast<unsigned>(ISD::ZEXT), {dstTy}, {src});
-            setDef(inst.dest, node);
+            setDef(inst.dest, node, dag);
         }
 
         void DAGBuilder::visit(ME::SI2FPInst& inst, SelectionDAG& dag)
@@ -386,7 +397,7 @@ namespace BE
             // 任务：实现 SITOFP（有符号整型到浮点）
             SDValue src  = getValue(inst.src, dag, BE::I32);
             SDValue node = dag.getNode(static_cast<unsigned>(ISD::SITOFP), {BE::F32}, {src});
-            setDef(inst.dest, node);
+            setDef(inst.dest, node, dag);
         }
 
         void DAGBuilder::visit(ME::FP2SIInst& inst, SelectionDAG& dag)
@@ -394,7 +405,7 @@ namespace BE
             // 任务：实现 FPTOSI（浮点到有符号整型）
             SDValue src  = getValue(inst.src, dag, BE::F32);
             SDValue node = dag.getNode(static_cast<unsigned>(ISD::FPTOSI), {BE::I32}, {src});
-            setDef(inst.dest, node);
+            setDef(inst.dest, node, dag);
         }
 
         void DAGBuilder::visit(ME::PhiInst& inst, SelectionDAG& dag)
@@ -408,7 +419,7 @@ namespace BE
                 ops.push_back(getValue(val, dag, mapType(inst.dt)));
             }
             SDValue node = dag.getNode(static_cast<unsigned>(ISD::PHI), {mapType(inst.dt)}, ops);
-            setDef(inst.res, node);
+            setDef(inst.res, node, dag);
         }
 
     }  // namespace DAG

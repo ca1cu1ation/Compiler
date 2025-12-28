@@ -242,6 +242,28 @@ namespace BE::AArch64
     {
         if (ImmeOperand* imi = dynamic_cast<ImmeOperand*>(src))
         {
+            // Try MOVZ (16-bit unsigned)
+            if (imi->value >= 0 && imi->value <= 65535)
+            {
+                Instr* inst = new Instr(Operator::MOVZ);
+                inst->operands.push_back(dst);
+                inst->operands.push_back(new ImmeOperand(imi->value));
+                inst->comment = comment;
+                return inst;
+            }
+
+            // Try MOVN (16-bit unsigned of bitwise NOT)
+            // For -1 (0xFFFFFFFF), ~(-1) is 0, which fits.
+            int not_val = ~imi->value;
+            if (not_val >= 0 && not_val <= 65535)
+            {
+                Instr* inst = new Instr(Operator::MOVN);
+                inst->operands.push_back(dst);
+                inst->operands.push_back(new ImmeOperand(not_val));
+                inst->comment = comment;
+                return inst;
+            }
+
             Instr* inst = new Instr(Operator::MOVZ);
             inst->operands.push_back(dst);
             inst->operands.push_back(new ImmeOperand(imi->value));

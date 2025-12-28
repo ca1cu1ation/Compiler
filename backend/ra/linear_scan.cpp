@@ -322,9 +322,9 @@ namespace BE::RA
                     return preg;
                 }
 
-                int preg = freeRegs.back();
-                freeRegs.pop_back();
-                return preg;
+                // If we need a callee-saved register (crosses call) but none are available,
+                // we must spill, because caller-saved registers would be clobbered.
+                return std::nullopt;
             };
 
             auto expire = [&](int curStart) {
@@ -434,6 +434,9 @@ namespace BE::RA
                     rewritten.push_back(new BE::FILoadInst(*scratch, sp->second, ""));
                     BE::Targeting::g_adapter->replaceUse(inst, u, *scratch);
                 }
+
+                // Clear used scratch regs, as we can reuse them for defs (inputs are read before outputs written)
+                usedScratchIds.clear();
 
                 // Rewrite defs: replace def with scratch/phys, and insert spills after inst
                 // (we buffer spills and append after the instruction)

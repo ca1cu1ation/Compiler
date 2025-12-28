@@ -23,6 +23,34 @@ namespace BE::AArch64::Passes::Lowering
         return false;
     }
 
+    static bool usesCalleeSavedRegs(const BE::Function* func)
+    {
+        if (!func) return false;
+        for (auto& [_, block] : func->blocks)
+        {
+            if (!block) continue;
+            for (auto* inst : block->insts)
+            {
+                if (!inst || inst->kind != BE::InstKind::TARGET) continue;
+                auto* tin = static_cast<Instr*>(inst);
+                for (auto* op : tin->operands)
+                {
+                    if (op->ot == BE::Operand::Type::REG)
+                    {
+                        auto* regOp = static_cast<RegOperand*>(op);
+                        int id = regOp->reg.rId;
+                        if ((id >= A64_CALLEE_INT_FIRST && id <= A64_CALLEE_INT_LAST) ||
+                            (id >= A64_CALLEE_FP_FIRST && id <= A64_CALLEE_FP_LAST))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     void FrameLoweringPass::runOnModule(BE::Module& module)
     {
         for (auto* func : module.functions)
@@ -51,7 +79,7 @@ namespace BE::AArch64::Passes::Lowering
         // - 非叶子函数必须保存/恢复 LR(x30)
         // - callee-saved: x19-x28, d8-d15（为了简单与稳妥，这里统一保存一整组）
         // - 16-byte stack alignment
-        const bool needPrologue = hasCall(func) || stackSize > 0 || func->hasStackParam;
+        const bool needPrologue = hasCall(func) || stackSize > 0 || func->hasStackParam || usesCalleeSavedRegs(func);
         if (needPrologue)
         {
             std::deque<BE::MInstruction*> prologue;

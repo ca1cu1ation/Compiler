@@ -96,7 +96,15 @@ namespace BE::AArch64
         if (minst->kind == BE::InstKind::MOVE)
         {
             auto* moveInst = static_cast<BE::MoveInst*>(minst);
-            out_ << "  MOVE " << formatOperand(moveInst->dest) << ", " << formatOperand(moveInst->src) << "\n";
+            auto* dst      = static_cast<RegOperand*>(moveInst->dest);
+            auto* src      = static_cast<RegOperand*>(moveInst->src);
+            bool  isFloat  = (dst->reg.dt == F32 || dst->reg.dt == F64) || (src->reg.dt == F32 || src->reg.dt == F64);
+
+            if (isFloat)
+                out_ << "  fmov " << formatOperand(moveInst->dest) << ", " << formatOperand(moveInst->src) << "\n";
+            else
+                out_ << "  mov " << formatOperand(moveInst->dest) << ", " << formatOperand(moveInst->src) << "\n";
+
             if (minst->comment != "") out_ << "  // " << minst->comment << "\n";
             return;
         }

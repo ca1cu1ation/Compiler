@@ -45,6 +45,7 @@ namespace BE::Targeting::AArch64
             18,
           16,
           17,
+          15, // Reserve x15 as a dedicated scratch register for StackLowering (address calculation)
             BE::AArch64::A64_REGISTER_ID_SP,
             BE::AArch64::A64_REGISTER_ID_XZR,
         };

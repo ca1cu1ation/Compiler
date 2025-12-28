@@ -52,9 +52,11 @@ namespace BE::AArch64::Passes::Lowering
 
         static inline BE::Register pickScratchBase(const BE::Register& avoid)
         {
-            // x16/x17 are reserved as scratch regs.
-            if (avoid.rId != 16) return BE::AArch64::PR::x16;
-            return BE::AArch64::PR::x17;
+            // x16/x17 are reserved as scratch regs for RA reloading/spilling.
+            // If both are used (e.g. binary op with 2 spilled inputs), we need a 3rd scratch
+            // for address calculation if the stack offset is large.
+            // We reserved x15 in RegInfo for this purpose.
+            return BE::AArch64::PR::x15;
         }
 
         static void emitLoadImm64(std::deque<BE::MInstruction*>& out, const BE::Register& dst, unsigned long long value)
