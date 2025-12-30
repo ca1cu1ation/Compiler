@@ -36,39 +36,37 @@ namespace BE::AArch64::Passes::Lowering
 
         static std::vector<BE::MInstruction*> materializeParallelCopies(const std::vector<Copy>& inCopies)
         {
-            // Resolve parallel copies to a sequential list using a temp vreg to break cycles.
-            std::map<Register, Register> copies;  // dst -> src
+            std::vector<std::pair<Register, Register>> worklist;
             for (auto& [dst, src] : inCopies)
             {
                 if (dst == src) continue;
-                copies[dst] = src;
+                worklist.push_back({dst, src});
             }
 
             std::vector<BE::MInstruction*> out;
-            if (copies.empty()) return out;
+            if (worklist.empty()) return out;
 
-            auto buildDstSet = [&]() {
-                std::set<Register> dsts;
-                for (auto& [d, _] : copies) dsts.insert(d);
-                return dsts;
-            };
-
-            while (!copies.empty())
+            std::map<Register, int> useCounts;
+            for (auto& [dst, src] : worklist)
             {
-                auto dsts = buildDstSet();
+                useCounts[src]++;
+            }
 
-                // Find an acyclic copy: src not produced by any remaining copy.
+            while (!worklist.empty())
+            {
                 bool progressed = false;
-                for (auto it = copies.begin(); it != copies.end();)
+                for (auto it = worklist.begin(); it != worklist.end();)
                 {
-                    const Register dst = it->first;
-                    const Register src = it->second;
-                    if (!dsts.count(src))
+                    Register dst = it->first;
+                    Register src = it->second;
+
+                    if (useCounts[dst] == 0)
                     {
                         out.push_back(BE::AArch64::createMove(new BE::RegOperand(dst),
                             new BE::RegOperand(src),
                             LOC_STR));
-                        it = copies.erase(it);
+                        useCounts[src]--;
+                        it = worklist.erase(it);
                         progressed = true;
                     }
                     else
@@ -79,20 +77,23 @@ namespace BE::AArch64::Passes::Lowering
 
                 if (progressed) continue;
 
-                // Cycle: pick one copy dst<-src and break it with a temp.
-                auto it = copies.begin();
-                Register dst = it->first;
-                Register src = it->second;
-                Register tmp = BE::getVReg(dst.dt);
+                // Cycle detected. Break it.
+                auto&    copy = worklist.front();
+                Register dst  = copy.first;
+                Register tmp  = BE::getVReg(dst.dt);
 
                 out.push_back(BE::AArch64::createMove(new BE::RegOperand(tmp),
-                    new BE::RegOperand(src),
+                    new BE::RegOperand(dst),
                     LOC_STR));
 
-                // Replace all uses of src as a source with tmp.
-                for (auto& [d, s] : copies)
+                for (auto& [d, s] : worklist)
                 {
-                    if (s == src) s = tmp;
+                    if (s == dst)
+                    {
+                        s = tmp;
+                        useCounts[dst]--;
+                        useCounts[tmp]++;
+                    }
                 }
             }
 
@@ -177,7 +178,90 @@ namespace BE::AArch64::Passes::Lowering
                     }
                     else if (auto* iop = dynamic_cast<BE::AArch64::ImmeOperand*>(op))
                     {
-                        immMovesPerPred[predId].push_back(BE::AArch64::createMove(new BE::RegOperand(dst), new BE::AArch64::ImmeOperand(iop->value), LOC_STR));
+                        int  imm    = iop->value;
+                        bool simple = (imm >= 0 && imm <= 65535) || (~imm >= 0 && ~imm <= 65535);
+
+                        if (dst.dt == BE::F32)
+                        {
+                            Register tmp = BE::getVReg(BE::I32);
+                            if (simple)
+                            {
+                                immMovesPerPred[predId].push_back(BE::AArch64::createMove(
+                                    new BE::RegOperand(tmp), new BE::AArch64::ImmeOperand(imm), LOC_STR));
+                            }
+                            else
+                            {
+                                auto segments = BE::AArch64::decomposeImm64(
+                                    static_cast<unsigned long long>(static_cast<uint32_t>(imm)));
+                                bool first = true;
+                                for (size_t i = 0; i < 2; ++i)
+                                {
+                                    if (segments[i] == 0 && !first) continue;
+                                    if (first)
+                                    {
+                                        auto* inst = new BE::AArch64::Instr(BE::AArch64::Operator::MOVZ);
+                                        inst->operands.push_back(new BE::RegOperand(tmp));
+                                        inst->operands.push_back(new BE::AArch64::ImmeOperand(segments[i]));
+                                        if (i > 0) inst->operands.push_back(new BE::AArch64::ImmeOperand(i * 16));
+                                        inst->comment = LOC_STR;
+                                        immMovesPerPred[predId].push_back(inst);
+                                        first = false;
+                                    }
+                                    else
+                                    {
+                                        auto* inst = new BE::AArch64::Instr(BE::AArch64::Operator::MOVK);
+                                        inst->operands.push_back(new BE::RegOperand(tmp));
+                                        inst->operands.push_back(new BE::AArch64::ImmeOperand(segments[i]));
+                                        inst->operands.push_back(new BE::AArch64::ImmeOperand(i * 16));
+                                        inst->comment = LOC_STR;
+                                        immMovesPerPred[predId].push_back(inst);
+                                    }
+                                }
+                            }
+
+                            auto* fmov = new BE::AArch64::Instr(BE::AArch64::Operator::FMOV);
+                            fmov->operands.push_back(new BE::RegOperand(dst));
+                            fmov->operands.push_back(new BE::RegOperand(tmp));
+                            fmov->comment = LOC_STR;
+                            immMovesPerPred[predId].push_back(fmov);
+                        }
+                        else
+                        {
+                            if (simple)
+                            {
+                                immMovesPerPred[predId].push_back(BE::AArch64::createMove(
+                                    new BE::RegOperand(dst), new BE::AArch64::ImmeOperand(imm), LOC_STR));
+                            }
+                            else
+                            {
+                                auto segments = BE::AArch64::decomposeImm64(
+                                    static_cast<unsigned long long>(static_cast<uint32_t>(imm)));
+                                bool first = true;
+                                for (size_t i = 0; i < 2; ++i)
+                                {
+                                    if (segments[i] == 0 && !first) continue;
+                                    if (first)
+                                    {
+                                        auto* inst = new BE::AArch64::Instr(BE::AArch64::Operator::MOVZ);
+                                        inst->operands.push_back(new BE::RegOperand(dst));
+                                        inst->operands.push_back(new BE::AArch64::ImmeOperand(segments[i]));
+                                        if (i > 0) inst->operands.push_back(new BE::AArch64::ImmeOperand(i * 16));
+                                        inst->comment = LOC_STR;
+                                        immMovesPerPred[predId].push_back(inst);
+                                        first = false;
+                                    }
+                                    else
+                                    {
+                                        auto* inst = new BE::AArch64::Instr(BE::AArch64::Operator::MOVK);
+                                        inst->operands.push_back(new BE::RegOperand(dst));
+                                        inst->operands.push_back(new BE::AArch64::ImmeOperand(segments[i]));
+                                        inst->operands.push_back(new BE::AArch64::ImmeOperand(i * 16));
+                                        inst->comment = LOC_STR;
+                                        immMovesPerPred[predId].push_back(inst);
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }

@@ -31,7 +31,14 @@ namespace BE
             }
 
             SDValue getNode(uint32_t opcode, const std::vector<DataType*>& vts, const std::vector<SDValue>& ops)
-            {
+            {                // Skip CSE for COPY to allow distinct IRRegIds
+                if (opcode == static_cast<unsigned>(ISD::COPY))
+                {
+                    auto* n = new SDNode(opcode, vts, ops);
+                    nodes_.push_back(n);
+                    n->setId(next_id_++);
+                    return SDValue(n, 0);
+                }
                 SDNode temp(opcode, vts, ops);
 
                 FoldingSetNodeID ID;

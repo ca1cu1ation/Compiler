@@ -370,7 +370,7 @@ namespace BE
                 }
 
                 int strideElems = 1;
-                for (size_t j = i + 1; j < dims.size(); ++j) strideElems *= dims[j];
+                for (size_t j = i; j < dims.size(); ++j) strideElems *= dims[j];
                 int strideBytes = strideElems * elemSize;
 
                 SDValue strideNode = dag.getConstantI64(strideBytes, BE::I64);

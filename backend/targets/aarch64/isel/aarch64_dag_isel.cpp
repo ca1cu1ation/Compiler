@@ -23,6 +23,7 @@ namespace BE::AArch64
     {
         std::vector<const DAG::SDNode*> order;
         std::set<const DAG::SDNode*>    vis;
+        std::vector<const DAG::SDNode*> terminators;
 
         std::function<void(const DAG::SDNode*)> dfs = [&](const DAG::SDNode* n) {
             if (!n) return;
@@ -38,7 +39,23 @@ namespace BE::AArch64
             order.push_back(n);
         };
 
-        for (auto* n : dag.getNodes()) dfs(n);
+        for (auto* n : dag.getNodes())
+        {
+            auto opc = static_cast<DAG::ISD>(n->getOpcode());
+            if (opc == DAG::ISD::BR || opc == DAG::ISD::BRCOND || opc == DAG::ISD::RET)
+            {
+                terminators.push_back(n);
+            }
+            else
+            {
+                dfs(n);
+            }
+        }
+
+        for (auto* n : terminators)
+        {
+            dfs(n);
+        }
 
         return order;
     }
@@ -499,6 +516,12 @@ namespace BE::AArch64
             {
                 valOp = new ImmeOperand(static_cast<int>(valNode->getImmI64()));
             }
+            else if (opc == DAG::ISD::CONST_F32)
+            {
+                float fval = valNode->hasImmF32() ? valNode->getImmF32() : 0.0f;
+                int   bits = FLOAT_TO_INT_BITS(fval);
+                valOp      = new ImmeOperand(bits);
+            }
             else
             {
                 valOp = new RegOperand(getOperandReg(valNode, m_block));
@@ -803,6 +826,11 @@ namespace BE::AArch64
         if (!symNode || !symNode->hasSymbol()) return;
         std::string callee = symNode->getSymbol();
 
+        // Handle intrinsics
+        if (callee.find("llvm.memset") == 0) callee = "sysy_memset";
+        if (callee.find("llvm.memcpy") == 0) callee = "sysy_memcpy";
+        if (callee.find("llvm.memmove") == 0) callee = "sysy_memmove";
+
         // IMPORTANT:
         // - Argument values may temporarily live in x0-x7.
         // - If we assign x0-x7 first, then later spill stack arguments, we can accidentally
@@ -889,7 +917,7 @@ namespace BE::AArch64
 
         m_block->insts.push_back(createInstr1(Operator::BL, new SymbolOperand(callee)));
 
-        if (node->getNumValues() > 0)
+        if (node->getNumValues() > 0 && node->getValueType(0) != BE::TOKEN)
         {
             Register dst = nodeToVReg_.at(node);
             Register src;
