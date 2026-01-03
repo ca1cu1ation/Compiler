@@ -20,7 +20,22 @@
 namespace BE::AArch64
 {
     std::vector<const DAG::SDNode*> DAGIsel::scheduleDAG(const DAG::SelectionDAG& dag)
-    {
+    {   
+        // ============================================================================
+        // TODO: 实现 DAG 调度
+        // ============================================================================
+        //
+        // 作用：
+        // 将 DAG 的所有节点排序为线性指令序列，保证依赖关系正确。
+        //
+        // 为什么需要：
+        // - DAG 是无序的节点集合，生成代码前必须确定指令的先后顺序
+        // - 必须保证每条指令的操作数在使用前已被计算（拓扑序）
+        // - 需要正确处理 Chain 依赖，维持内存操作与副作用的顺序
+        //
+        // 如何做：
+        // - 后序遍历：从根节点（无使用者的节点）出发，先访问依赖再访问当前节点
+
         std::vector<const DAG::SDNode*> order;
         std::set<const DAG::SDNode*>    vis;
         std::vector<const DAG::SDNode*> terminators;
@@ -110,8 +125,8 @@ namespace BE::AArch64
 
         auto opcode = static_cast<DAG::ISD>(node->getOpcode());
 
-        // If this IR reg represents a stack object (alloca), it has no real def.
-        // Always materialize its address as (sp + frame_offset) when used.
+        // 如果这个 IR 寄存器代表一个栈对象（alloca），它没有真实的定义。
+        // 使用时总是将其地址实例化为 (sp + frame_offset)。
         if (opcode == DAG::ISD::REG && node->hasIRRegId() && ctx_.mfunc && ctx_.mfunc->frameInfo.hasObject(node->getIRRegId()))
         {
             Register addrReg = getVReg(BE::I64);
@@ -282,7 +297,25 @@ namespace BE::AArch64
     }
 
     void DAGIsel::importGlobals()
-    {
+    {   
+        // ============================================================================
+        // TODO: 导入全局变量
+        // ============================================================================
+        //
+        // 作用：
+        // 将 IR 模块中的全局变量转换为后端的 GlobalVariable 对象。
+        //
+        // 为什么需要：
+        // - 全局变量需在生成的汇编中声明和初始化
+        // - 需转换类型（ME::DataType → BE::DataType）
+        // - 需处理初始化值（标量 vs 数组）
+        //
+        // 关键点：
+        // - 遍历 ir_module_->globalVars
+        // - 创建 BE::GlobalVariable 对象
+        // - 处理数组维度（arrayDims）与初始值（initList/init）
+        // - 浮点数需位转换（FLOAT_TO_INT_BITS）
+
         auto mapType = [](ME::DataType t) -> BE::DataType* {
             switch (t)
             {
@@ -335,7 +368,15 @@ namespace BE::AArch64
     }
 
     void DAGIsel::collectAllocas(ME::Function* ir_func)
-    {
+    {   
+        // ============================================================================
+        // TODO: 收集函数中的所有 alloca 并注册到 frameInfo
+        // ============================================================================
+        //
+        // 作用：
+        // 遍历函数的所有 IR 指令，找到所有 ALLOCA 指令，计算其需要的栈空间大小，
+        // 并在函数级别的栈帧管理中为其分配槽位。
+
         auto sz = [&](ME::DataType t) {
             switch (t)
             {
@@ -367,17 +408,24 @@ namespace BE::AArch64
     }
 
     void DAGIsel::setupParameters(ME::Function* ir_func)
-    {
+    {   
+        // ============================================================================
+        // TODO: 为函数参数创建虚拟寄存器
+        // ============================================================================
+        //
+        // 作用：
+        // 遍历 IR 函数定义中的所有参数，为每个参数分配虚拟寄存器，并记录参数的虚拟寄存器映射关系
+
         auto* entryBlock = ctx_.mfunc->blocks.begin()->second;
 
         int intIdx   = 0;
         int floatIdx = 0;
         int stackOff = 0;
 
-        // Our frame lowering saves a fixed set of callee-saved regs and then does:
+        // 我们的栈帧降低会保存一组固定的被调用者保存寄存器，然后执行：
         //   stp x29, x30, [sp, #-16]!
         //   mov x29, sp
-        // Therefore, caller stack arguments (at entry SP) live at [x29, #kSavedAreaBytes + off].
+        // 因此，调用者的栈参数（在进入时的 SP）会位于 [x29, #kSavedAreaBytes + off]。
         constexpr int kSavedAreaBytes = 160;  // 4*16 (d8-d15) + 5*16 (x19-x28) + 1*16 (fp/lr)
 
         for (auto& [dt, op] : ir_func->funcDef->argRegs)
@@ -409,7 +457,7 @@ namespace BE::AArch64
             {
                 int off      = stackOff;
                 stackOff += 8;
-                // Incoming stack parameters: load from caller stack (do NOT reserve outgoing param area here).
+                // 传入的栈参数：从调用者的栈中加载（此处不需要预留传出参数区）。
                 entryBlock->insts.push_front(
                     createInstr2(Operator::LDR, new RegOperand(vreg), new MemOperand(PR::x29, kSavedAreaBytes + off)));
                 ctx_.mfunc->hasStackParam = true;
@@ -443,11 +491,11 @@ namespace BE::AArch64
                 {
                     baseNode = lhsBase;
                     offset   = lhsOffset + rhs->getImmI64();
-                    // AArch64 LDR/STR immediate offset limits:
-                    // - Unscaled: [-256, 255]
-                    // - Scaled (unsigned): [0, 32760] (aligned)
-                    // For simplicity, we only accept small offsets here to be safe.
-                    // Large offsets will be materialized into a register by the fallback path.
+                    // AArch64 的 LDR/STR 指令的立即数偏移范围：
+                    // - 非缩放模式：[-256, 255]
+                    // - 缩放（无符号）：[0, 32760]（需对齐）
+                    // 为了安全起见，这里只接受较小的偏移量。
+                    // 较大的偏移量会通过备用路径先计算到寄存器中。
                     if (offset >= -256 && offset <= 255) return true;
                     if (offset >= 0 && offset <= 4095 && (offset % 4 == 0)) return true; // Rough check for aligned
                     return false;
@@ -498,7 +546,22 @@ namespace BE::AArch64
     }
 
     void DAGIsel::selectPhi(const DAG::SDNode* node, BE::Block* m_block)
-    {
+    {   
+        // ============================================================================
+        // TODO: 选择 PHI 节点
+        // ============================================================================
+        //
+        // 作用：
+        // 为 PHI 节点生成 MIR 的 PhiInst，记录所有前驱块与对应的值。
+        //
+        // 为什么需要：
+        // - PHI 节点在 SSA 中合并来自不同前驱的值
+        // - 需要保留前驱块信息，供后续 PHI 消解 Pass 使用
+        //
+        // 关键点：
+        // - PHI 操作数成对出现：[label0, val0, label1, val1, ...]
+        // - 常量可直接作为立即数，无需实例化为寄存器
+
         Register dst = nodeToVReg_.at(node);
         auto*    phi = new PhiInst(dst, LOC_STR);
 
@@ -635,7 +698,11 @@ namespace BE::AArch64
     }
 
     void DAGIsel::selectUnary(const DAG::SDNode* node, BE::Block* m_block)
-    {
+    {   
+        // ============================================================================
+        // TODO: 选择一元运算节点，但也许不用做任何事情
+        // ============================================================================
+
         (void)node;
         (void)m_block;
     }
@@ -695,7 +762,18 @@ namespace BE::AArch64
     }
 
     void DAGIsel::selectStore(const DAG::SDNode* node, BE::Block* m_block)
-    {
+    {   
+        // ============================================================================
+        // TODO: 选择 STORE 节点
+        // ============================================================================
+        //
+        // 作用：
+        // 为 STORE 节点生成目标相关的存储指令（STR）。
+        //
+        // 与 LOAD 相似：
+        // - 同样需要地址选择与立即数范围检查
+        // - 操作数：[Chain, Value, Address]
+
         if (node->getNumOperands() < 3) return;
 
         const DAG::SDNode* valNode  = node->getOperand(1).getNode();
@@ -736,7 +814,11 @@ namespace BE::AArch64
     }
 
     void DAGIsel::selectICmp(const DAG::SDNode* node, BE::Block* m_block)
-    {
+    {   
+        // ============================================================================
+        // TODO: 选择整数比较节点（ICMP）
+        // ============================================================================
+
         if (node->getNumOperands() < 2) return;
 
         Register dst = nodeToVReg_.at(node);
@@ -767,7 +849,11 @@ namespace BE::AArch64
     }
 
     void DAGIsel::selectFCmp(const DAG::SDNode* node, BE::Block* m_block)
-    {
+    {   
+        // ============================================================================
+        // TODO: 选择浮点比较节点（FCMP）
+        // ============================================================================
+
         if (node->getNumOperands() < 2) return;
 
         Register dst = nodeToVReg_.at(node);
@@ -794,7 +880,16 @@ namespace BE::AArch64
     }
 
     void DAGIsel::selectBranch(const DAG::SDNode* node, BE::Block* m_block)
-    {
+    {   
+        // ============================================================================
+        // TODO: 选择分支节点（BR / BRCOND）
+        // ============================================================================
+        //
+        // 作用：
+        // 为无条件分支与条件分支生成跳转指令。
+        // - BR 直接跳转，用 B label
+        // - BRCOND 需判断条件（非 0 为真），生成 CMP + BNE + B 序列
+
         auto opc = static_cast<DAG::ISD>(node->getOpcode());
 
         if (opc == DAG::ISD::BR)
@@ -819,7 +914,23 @@ namespace BE::AArch64
     }
 
     void DAGIsel::selectCall(const DAG::SDNode* node, BE::Block* m_block)
-    {
+    {   
+        // ============================================================================
+        // TODO: 选择 CALL 节点
+        // ============================================================================
+        //
+        // 作用：
+        // 为函数调用生成参数传递、CALL 指令、返回值处理的完整序列。
+        // - 需要遵循目标调用约定（参数寄存器 vs 栈传参）
+        // - 整数与浮点参数使用不同的寄存器组
+        // - 内置函数（llvm.memset 等）需特殊处理，转化为对 memset 的调用
+        //
+        // AArch64 调用约定：
+        // - 整数参数：x0-x7 (w0-w7)
+        // - 浮点参数：d0-d7 (s0-s7)
+        // - 超出的参数 → 存储到栈上（SP + 0, SP + 8, ...）
+        // - 返回值从 x0/w0/s0/d0 搬运到目标寄存器
+
         if (node->getNumOperands() < 2) return;
 
         const DAG::SDNode* symNode = node->getOperand(1).getNode();
@@ -831,14 +942,13 @@ namespace BE::AArch64
         if (callee.find("llvm.memcpy") == 0) callee = "sysy_memcpy";
         if (callee.find("llvm.memmove") == 0) callee = "sysy_memmove";
 
-        // IMPORTANT:
-        // - Argument values may temporarily live in x0-x7.
-        // - If we assign x0-x7 first, then later spill stack arguments, we can accidentally
-        //   spill the *clobbered* values (especially in large-arg calls).
-        // Strategy:
-        // 1) Evaluate all argument values in order (emitting any needed code).
-        // 2) Spill all stack-passed arguments to the outgoing argument area.
-        // 3) Move register-passed arguments into x0-x7 / s0-d7.
+        // 重要提示：
+        // - 参数值可能会临时存放在 x0-x7 寄存器中。
+        // - 如果我们先分配 x0-x7，然后再溢出栈参数，可能会错误地溢出已被覆盖的值（尤其是在参数较多的调用中）。
+        // 策略：
+        // 1）按顺序计算所有参数值（生成所需代码）。
+        // 2）将所有需要通过栈传递的参数写入传出参数区。
+        // 3）将需要通过寄存器传递的参数移动到 x0-x7 / s0-d7。
 
         struct ArgLoc
         {
@@ -847,7 +957,7 @@ namespace BE::AArch64
             bool     inReg   = false;
             Register preg;
             int      stackOff = -1;
-            int      tmpOff   = -1;  // staging slot for reg-passed args
+            int      tmpOff   = -1;  // 临时槽位偏移（用于寄存器参数）
         };
 
         std::vector<ArgLoc> args;
@@ -889,8 +999,7 @@ namespace BE::AArch64
             args.push_back(loc);
         }
 
-        // Ensure outgoing argument area is large enough for both stack-passed args and
-        // temporary staging slots for register-passed args.
+        // 确保传出参数区足够大，既能容纳通过栈传递的参数，也能容纳寄存器参数的临时槽位。
         int regTmpOff = stackOff;
         for (auto& a : args)
         {
@@ -901,14 +1010,14 @@ namespace BE::AArch64
 
         if (regTmpOff > 0) ctx_.mfunc->frameInfo.setParamAreaSize(regTmpOff);
 
-        // 1) Store ALL args to outgoing area first (safe even if sources live in x0-x7).
+        // 1）先将所有参数存入传出参数区（即使源值在 x0-x7 中也安全）。
         for (const auto& a : args)
         {
             const int off = a.inReg ? a.tmpOff : a.stackOff;
             m_block->insts.push_back(createInstr2(Operator::STR, new RegOperand(a.src), new MemOperand(PR::sp, off)));
         }
 
-        // 2) Load register-passed args from staging slots into x0-x7 / s0-d7.
+        // 2）将需要通过寄存器传递的参数从临时槽加载到 x0-x7 / s0-d7。
         for (const auto& a : args)
         {
             if (!a.inReg) continue;
@@ -959,7 +1068,14 @@ namespace BE::AArch64
     }
 
     void DAGIsel::selectCast(const DAG::SDNode* node, BE::Block* m_block)
-    {
+    {   
+        // ============================================================================
+        // TODO: 选择类型转换节点（ZEXT / SITOFP / FPTOSI）
+        // ============================================================================
+        //
+        // 作用：
+        // 为类型转换节点生成目标相关的转换指令。
+
         auto opc = static_cast<DAG::ISD>(node->getOpcode());
         Register dst = nodeToVReg_.at(node);
         Register src = getOperandReg(node->getOperand(0).getNode(), m_block);
@@ -1029,22 +1145,65 @@ namespace BE::AArch64
     }
 
     void DAGIsel::selectBlock(ME::Block* ir_block, const DAG::SelectionDAG& dag)
-    {
+    {   
+        // ============================================================================
+        // TODO: 选择基本块的所有指令
+        // ============================================================================
+        //
+        // 作用：
+        // 将一个基本块的 DAG 转换为 MIR 指令序列。
+        //
+        // 采用两阶段：
+        // - 阶段 1：调度与寄存器分配
+        //   * 调度 DAG 节点，确定指令顺序
+        //   * 为每个节点预分配虚拟寄存器（如果不预分配会怎么样？可以怎么解决？）
+        // - 阶段 2：指令选择
+        //   * 按调度顺序遍历节点，调用 selectNode 生成具体指令
+        //   * 使用已选择集合避免重复选择
+
         (void)ir_block;
 
         nodeToVReg_.clear();
         selected_.clear();
 
         auto*  m_block = ctx_.mfunc->blocks[ir_block->blockId];
+        // 1. 调度 (Scheduling): 将图结构线性化，决定指令生成的顺序
         auto   order   = scheduleDAG(dag);
+        // 2. 预分配虚拟寄存器: 为每个计算节点分配一个后端虚拟寄存器
         for (auto* n : order) allocateRegistersForNode(n);
+        // 3. 逐个节点生成指令
         for (auto* n : order) selectNode(n, m_block);
     }
 
     void DAGIsel::selectFunction(ME::Function* ir_func)
-    {
-        ctx_ = FunctionContext();
+    {   
+        // ============================================================================
+        // TODO: 选择函数的所有指令
+        // ============================================================================
+        //
+        // 作用：
+        // 协调整个函数的指令选择流程，包括栈帧管理、参数设置、基本块选择。
+        //
+        // 为什么需要函数级初始化：
+        // - 每个函数有独立的虚拟寄存器空间（vregMap、nodeToVReg_）
+        // - 需要计算栈帧布局（传出参数区、局部变量区）
+        // - 需要创建所有基本块的 MIR 对象
+        //
+        // 关键步骤：
+        // 1. 重置上下文
+        // 2. 创建后端函数对象
+        // 3. 计算传出参数区大小
+        // 4. 收集局部变量
+        // 5. 创建所有基本块对象
+        // 6. 为参数分配虚拟寄存器
+        // 7. 对每个基本块做指令选择
 
+        // Hint: 建议了解下对于函数来说，哪些寄存器是由调用者保存，哪些是被调用者保存的
+        
+        // 重置上下文
+        ctx_ = FunctionContext();
+        
+        // 创建后端函数对象
         ctx_.mfunc = new BE::Function(ir_func->funcDef->funcName);
         m_backend_module->functions.push_back(ctx_.mfunc);
 

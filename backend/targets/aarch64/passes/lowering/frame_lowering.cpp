@@ -77,14 +77,14 @@ namespace BE::AArch64::Passes::Lowering
 
         // AArch64 ABI:
         // - 非叶子函数必须保存/恢复 LR(x30)
-        // - callee-saved: x19-x28, d8-d15（为了简单与稳妥，这里统一保存一整组）
-        // - 16-byte stack alignment
+        // - 被调用者保存寄存器：x19-x28, d8-d15（为了简单与稳妥，这里统一保存一整组）
+        // - 栈需要 16 字节对齐
         const bool needPrologue = hasCall(func) || stackSize > 0 || func->hasStackParam || usesCalleeSavedRegs(func);
         if (needPrologue)
         {
             std::deque<BE::MInstruction*> prologue;
 
-            // push callee-saved FPRs d8-d15 (4 pairs)
+            // 压入被调用者保存的浮点寄存器 d8-d15（4 对）
             prologue.push_back(
                 createInstr4(Operator::STP, new RegOperand(PR::d8), new RegOperand(PR::d9), new RegOperand(PR::sp), new ImmeOperand(-16)));
             prologue.push_back(
@@ -94,7 +94,7 @@ namespace BE::AArch64::Passes::Lowering
             prologue.push_back(
                 createInstr4(Operator::STP, new RegOperand(PR::d14), new RegOperand(PR::d15), new RegOperand(PR::sp), new ImmeOperand(-16)));
 
-            // push callee-saved GPRs x19-x28 (5 pairs)
+            // 压入被调用者保存的通用寄存器 x19-x28（5 对）
             prologue.push_back(
                 createInstr4(Operator::STP, new RegOperand(PR::x19), new RegOperand(PR::x20), new RegOperand(PR::sp), new ImmeOperand(-16)));
             prologue.push_back(
@@ -106,19 +106,19 @@ namespace BE::AArch64::Passes::Lowering
             prologue.push_back(
                 createInstr4(Operator::STP, new RegOperand(PR::x27), new RegOperand(PR::x28), new RegOperand(PR::sp), new ImmeOperand(-16)));
 
-            // push fp/lr, establish fp
+            // 压入帧指针和返回地址，建立帧指针
             prologue.push_back(
                 createInstr4(Operator::STP, new RegOperand(PR::x29), new RegOperand(PR::x30), new RegOperand(PR::sp), new ImmeOperand(-16)));
             prologue.push_back(BE::AArch64::createMove(new RegOperand(PR::x29), new RegOperand(PR::sp)));
 
-            // allocate local stack
+            // 分配本地栈空间
             if (stackSize > 0)
             {
-                // AArch64 add/sub immediate is limited; keep SP 16-byte aligned by chunking.
+                // AArch64 的加/减立即数有限制；通过分块保证 SP 始终 16 字节对齐。
                 int remaining = stackSize;
                 while (remaining > 0)
                 {
-                    int chunk = std::min(remaining, 4080);  // <= 4095 and 16-byte aligned
+                    int chunk = std::min(remaining, 4080);  // <= 4095 且 16 字节对齐
                     prologue.push_back(createInstr3(
                         Operator::SUB, new RegOperand(PR::sp), new RegOperand(PR::sp), new ImmeOperand(chunk)));
                     remaining -= chunk;
@@ -128,7 +128,7 @@ namespace BE::AArch64::Passes::Lowering
             entryBlock->insts.insert(entryBlock->insts.begin(), prologue.begin(), prologue.end());
         }
 
-        // 在所有 RET 前恢复现场
+        // 在所有 RET 指令前恢复寄存器现场
         for (auto& [bid, block] : func->blocks)
         {
             (void)bid;
@@ -159,11 +159,11 @@ namespace BE::AArch64::Passes::Lowering
                             }
                         }
 
-                        // Pop in reverse order of pushes (stack top holds fp/lr)
+                        // 按压栈顺序逆序弹出（栈顶保存 fp/lr）
                         rewritten.push_back(
                             createInstr4(Operator::LDP, new RegOperand(PR::x29), new RegOperand(PR::x30), new RegOperand(PR::sp), new ImmeOperand(16)));
 
-                        // restore callee-saved GPRs
+                        // 恢复被调用者保存的通用寄存器
                         rewritten.push_back(
                             createInstr4(Operator::LDP, new RegOperand(PR::x27), new RegOperand(PR::x28), new RegOperand(PR::sp), new ImmeOperand(16)));
                         rewritten.push_back(
@@ -175,7 +175,7 @@ namespace BE::AArch64::Passes::Lowering
                         rewritten.push_back(
                             createInstr4(Operator::LDP, new RegOperand(PR::x19), new RegOperand(PR::x20), new RegOperand(PR::sp), new ImmeOperand(16)));
 
-                        // restore callee-saved FPRs
+                        // 恢复被调用者保存的浮点寄存器
                         rewritten.push_back(
                             createInstr4(Operator::LDP, new RegOperand(PR::d14), new RegOperand(PR::d15), new RegOperand(PR::sp), new ImmeOperand(16)));
                         rewritten.push_back(

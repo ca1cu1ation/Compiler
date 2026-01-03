@@ -15,8 +15,9 @@ namespace BE::AArch64::Passes::Lowering
 
     namespace
     {
-        using Copy = std::pair<Register, Register>;  // dst <- src
+        using Copy = std::pair<Register, Register>;  // 目标寄存器 <- 源寄存器
 
+        // 重写前驱块中的分支目标（将 oldTarget 替换为 newTarget）
         static void rewriteBranchTarget(BE::Block* pred, uint32_t oldTarget, uint32_t newTarget)
         {
             if (!pred) return;
@@ -34,8 +35,10 @@ namespace BE::AArch64::Passes::Lowering
             }
         }
 
+        // 并行复制消除，生成无冲突的 move 指令序列
         static std::vector<BE::MInstruction*> materializeParallelCopies(const std::vector<Copy>& inCopies)
         {
+
             std::vector<std::pair<Register, Register>> worklist;
             for (auto& [dst, src] : inCopies)
             {
@@ -43,14 +46,17 @@ namespace BE::AArch64::Passes::Lowering
                 worklist.push_back({dst, src});
             }
 
+
             std::vector<BE::MInstruction*> out;
             if (worklist.empty()) return out;
+
 
             std::map<Register, int> useCounts;
             for (auto& [dst, src] : worklist)
             {
                 useCounts[src]++;
             }
+
 
             while (!worklist.empty())
             {
@@ -77,7 +83,7 @@ namespace BE::AArch64::Passes::Lowering
 
                 if (progressed) continue;
 
-                // Cycle detected. Break it.
+                // 检测到环，打破环路
                 auto&    copy = worklist.front();
                 Register dst  = copy.first;
                 Register tmp  = BE::getVReg(dst.dt);
@@ -100,6 +106,7 @@ namespace BE::AArch64::Passes::Lowering
             return out;
         }
 
+        // 在终结指令（如分支、返回）前插入 move 指令
         static void insertMovesBeforeTerminator(BE::Block* block,
             const std::vector<BE::MInstruction*>& moves,
             const BE::Targeting::TargetInstrAdapter* adapter)
@@ -128,18 +135,20 @@ namespace BE::AArch64::Passes::Lowering
         }
     }  // namespace
 
+    // 在整个模块上运行 Phi 消除
     void PhiEliminationPass::runOnModule(BE::Module& module, const BE::Targeting::TargetInstrAdapter* adapter)
     {
         if (module.functions.empty()) return;
         for (auto* func : module.functions) runOnFunction(func, adapter);
     }
 
+    // 在单个函数上运行 Phi 消除
     void PhiEliminationPass::runOnFunction(BE::Function* func, const BE::Targeting::TargetInstrAdapter* adapter)
     {
         if (!func || func->blocks.empty()) return;
         ASSERT(adapter && "PhiEliminationPass requires TargetInstrAdapter");
 
-        // Build CFG to query predecessors/successors.
+        // 构建 CFG 以查询前驱/后继信息
         BE::MIR::CFGBuilder builder(adapter);
         BE::MIR::CFG*       cfg = builder.buildCFGForFunction(func);
         if (!cfg) return;
@@ -147,21 +156,21 @@ namespace BE::AArch64::Passes::Lowering
         uint32_t maxId = 0;
         for (auto& [id, _] : func->blocks) maxId = std::max(maxId, id);
 
-        // Reuse split blocks per edge (pred -> succ).
+        // 每条边（pred -> succ）只复用一次分裂块
         std::map<std::pair<uint32_t, uint32_t>, uint32_t> edgeSplit;
 
         for (auto& [bid, block] : func->blocks)
         {
             if (!block) continue;
 
-            // Collect PHIs in this block.
+            // 收集该块中的所有 PHI 指令
             std::vector<BE::PhiInst*> phis;
             for (auto* inst : block->insts)
                 if (inst && inst->kind == BE::InstKind::PHI) phis.push_back(static_cast<BE::PhiInst*>(inst));
 
             if (phis.empty()) continue;
 
-            // predId -> copies for that incoming edge
+            // predId -> 该前驱边需要插入的复制指令
             std::map<uint32_t, std::vector<Copy>> copiesPerPred;
             std::map<uint32_t, std::vector<BE::MInstruction*>> immMovesPerPred;
             std::set<uint32_t> preds;
@@ -266,18 +275,18 @@ namespace BE::AArch64::Passes::Lowering
                 }
             }
 
-            // For each predecessor edge, insert copies.
+            // 对每个前驱边插入复制指令
             for (uint32_t predId : preds)
             {
                 if (!func->blocks.count(predId)) continue;
                 auto* predBlock = func->blocks[predId];
                 if (!predBlock) continue;
 
-                // If pred has multiple successors, split edge pred->bid.
+                // 如果前驱有多个后继，则分裂 pred->bid 这条边
                 bool needSplit = false;
                 if (predId < cfg->graph_id.size())
                 {
-                    // graph_id is indexed by block id.
+                    // graph_id 按块 id 索引
                     if (cfg->graph_id[predId].size() > 1) needSplit = true;
                 }
 
@@ -295,10 +304,10 @@ namespace BE::AArch64::Passes::Lowering
                         auto* splitBlock = new BE::Block(splitId);
                         func->blocks[splitId] = splitBlock;
 
-                        // Redirect pred's branch target from bid to splitId.
+                        // 将 pred 的分支目标从 bid 重定向到 splitId
                         rewriteBranchTarget(predBlock, bid, splitId);
 
-                        // split block unconditionally branches to original succ
+                        // 分裂块无条件跳转到原本的后继
                         splitBlock->insts.push_back(
                             BE::AArch64::createInstr1(BE::AArch64::Operator::B, new BE::AArch64::LabelOperand(bid)));
                     }
@@ -316,7 +325,7 @@ namespace BE::AArch64::Passes::Lowering
                 insertMovesBeforeTerminator(insertBlock, seq, adapter);
             }
 
-            // Remove PHIs from this block.
+            // 移除该块中的所有 PHI 指令
             std::deque<BE::MInstruction*> rewritten;
             rewritten.clear();
             for (auto* inst : block->insts)

@@ -41,23 +41,26 @@ namespace BE::RA
      */
     namespace
     {
+        // 区间段结构体
         struct Segment
         {
             int start;
             int end;
             Segment(int s = 0, int e = 0) : start(s), end(e) {}
         };
+        // 活跃区间结构体
         struct Interval
         {
             BE::Register         vreg;
             std::vector<Segment> segs;
-            bool                 crossesCall = false;
+            bool                 crossesCall = false; // 是否跨越函数调用
 
             void addSegment(int s, int e)
             {
                 if (s >= e) return;
                 segs.emplace_back(s, e);
             }
+            // 合并重叠区间
             void merge()
             {
                 if (segs.empty()) return;
@@ -79,6 +82,7 @@ namespace BE::RA
             }
         };
 
+        // 区间排序规则（按起点排序，起点相同按终点排序）
         struct IntervalOrder
         {
             bool operator()(const Interval* a, const Interval* b) const
@@ -93,6 +97,7 @@ namespace BE::RA
         };
     }  // namespace
 
+    // 构建可分配的整数寄存器集合
     static std::vector<int> buildAllocatableInt(const BE::Targeting::TargetRegInfo& ri)
     {
         std::vector<int> res;
@@ -102,6 +107,7 @@ namespace BE::RA
             if (std::find(reserved.begin(), reserved.end(), r) == reserved.end()) res.push_back(r);
         return res;
     }
+    // 构建可分配的浮点寄存器集合
     static std::vector<int> buildAllocatableFloat(const BE::Targeting::TargetRegInfo& ri)
     {
         std::vector<int> res;
@@ -116,6 +122,7 @@ namespace BE::RA
     {
         ASSERT(BE::Targeting::g_adapter && "TargetInstrAdapter is not set");
 
+        // 指令线性化与编号，收集调用点
         std::map<BE::Block*, std::pair<int, int>>                                   blockRange;
         std::vector<std::pair<BE::Block*, std::deque<BE::MInstruction*>::iterator>> id2iter;
         std::set<int>                                                               callPoints;
@@ -131,6 +138,7 @@ namespace BE::RA
             blockRange[block] = {start, ins_id};
         }
 
+        // 构建 USE/DEF 集合
         std::map<BE::Block*, std::set<BE::Register>> USE, DEF;
         for (auto& [bid, block] : func.blocks)
         {
@@ -301,10 +309,12 @@ namespace BE::RA
                 intIntervals.push_back(&iv);
         }
 
+        // 分配函数
         auto assignClass = [&](std::vector<Interval*>& work, std::vector<int>& freeRegs, const std::vector<int>& preferredForCalls) {
             std::sort(work.begin(), work.end(), IntervalOrder());
             std::vector<std::pair<Interval*, int>> active;
 
+            // 选择寄存器的辅助函数
             auto takePreferred = [&](bool wantPreferred) -> std::optional<int> {
                 if (freeRegs.empty()) return std::nullopt;
                 if (!wantPreferred || preferredForCalls.empty())
@@ -322,11 +332,12 @@ namespace BE::RA
                     return preg;
                 }
 
-                // If we need a callee-saved register (crosses call) but none are available,
-                // we must spill, because caller-saved registers would be clobbered.
+                // 如果需要一个被调用者保存的寄存器（跨调用）但没有可用的，
+                // 我们必须溢出，因为调用者保存的寄存器会被破坏。
                 return std::nullopt;
             };
 
+            // 过期区间处理的辅助函数
             auto expire = [&](int curStart) {
                 auto it = active.begin();
                 while (it != active.end())
@@ -378,11 +389,12 @@ namespace BE::RA
         // 注意：block->insts 是 std::deque；在其上 insert 会使迭代器失效。
         // 因此这里采用“重建指令列表”的方式进行改写，避免迭代器失效导致漏改写/未分配 vreg。
 
+        // 选择临时寄存器（scratch reg），避免与已用寄存器冲突
         auto pickScratch = [&](BE::DataType* dt, std::set<int>& used) -> std::optional<BE::Register> {
             const bool isFloat = (dt == BE::F32 || dt == BE::F64);
-            // Use dedicated scratch regs reserved from allocation:
-            // - Int: x16/x17 (or w16/w17 for I32)
-            // - Float: d16/d17 (or s16/s17 for F32)
+            // 使用专用的 scratch 寄存器（分配时已保留）：
+            // - 整数：x16/x17（I32 时为 w16/w17）
+            // - 浮点：d16/d17（F32 时为 s16/s17）
             static const int kScratchIds[2] = {16, 17};
             for (int id : kScratchIds)
             {
@@ -417,7 +429,7 @@ namespace BE::RA
 
                 std::set<int> usedScratchIds;
 
-                // Rewrite uses: insert reloads before inst
+                // 重写使用：用临时/物理寄存器替换 use，并在指令前插入溢出加载
                 for (auto& u : uses)
                 {
                     if (!u.isVreg) continue;
@@ -435,11 +447,11 @@ namespace BE::RA
                     BE::Targeting::g_adapter->replaceUse(inst, u, *scratch);
                 }
 
-                // Clear used scratch regs, as we can reuse them for defs (inputs are read before outputs written)
+                // 清空已用的临时寄存器，因为后续定义可以复用（输入在输出前已被读取）
                 usedScratchIds.clear();
 
-                // Rewrite defs: replace def with scratch/phys, and insert spills after inst
-                // (we buffer spills and append after the instruction)
+                // 重写定义：用临时/物理寄存器替换 def，并在指令后插入溢出存储
+                // （我们先缓存溢出操作，随后追加到指令后）
                 std::vector<std::pair<BE::Register, int>> spills;
                 spills.reserve(defs.size());
                 for (auto& d : defs)

@@ -18,11 +18,11 @@ namespace BE::AArch64::Passes::Lowering
 
     namespace
     {
-        // IMPORTANT:
-        // - FILoadInst/FIStoreInst `frameIndex` is ALWAYS a spill-slot index created by RA.
-        // - FrameIndexOperand/fiop `frameIndex` is used for stack objects (alloca / DAG frame indices).
-        // Do NOT try to auto-detect between these two by number, because both namespaces can overlap
-        // (e.g., spill slot 5 vs. IR reg id 5 for a parameter), which leads to silent stack corruption.
+        // 重要说明：
+        // - FILoadInst/FIStoreInst 的 `frameIndex` 始终是由寄存器分配（RA）创建的溢出槽索引。
+        // - FrameIndexOperand/fiop 的 `frameIndex` 用于栈对象（alloca / DAG 帧索引）。
+        // 不要试图通过数字自动区分这两者，因为二者的命名空间可能重叠
+        // （例如，溢出槽 5 和参数的 IR reg id 5），这会导致静默的栈破坏。
 
         static int getSpillOffset(const BE::Function* func, int spillIndex)
         {
@@ -52,10 +52,10 @@ namespace BE::AArch64::Passes::Lowering
 
         static inline BE::Register pickScratchBase(const BE::Register& avoid)
         {
-            // x16/x17 are reserved as scratch regs for RA reloading/spilling.
-            // If both are used (e.g. binary op with 2 spilled inputs), we need a 3rd scratch
-            // for address calculation if the stack offset is large.
-            // We reserved x15 in RegInfo for this purpose.
+            // x16/x17 被保留为 RA reload/spill 的 scratch 寄存器。
+            // 如果这两个都被用掉（如二元操作有两个溢出输入），则需要第三个 scratch
+            // 用于大偏移量的地址计算。
+            // 我们在 RegInfo 中为此目的保留了 x15。
             return BE::AArch64::PR::x15;
         }
 
@@ -98,7 +98,7 @@ namespace BE::AArch64::Passes::Lowering
             if (off < 0)
             {
                 ERROR("Invalid stack offset %d for %s", off, (memOp == Operator::LDR ? "LDR" : "STR"));
-                // Best-effort: avoid assembler crash; still incorrect if reached.
+                // 尽力而为：避免汇编器崩溃；但如果执行到这里结果依然不正确。
                 off = 0;
             }
 
@@ -108,7 +108,7 @@ namespace BE::AArch64::Passes::Lowering
                 return;
             }
 
-            // Large/unencodable offset: compute address in scratch reg and use [scratch, #0]
+            // 大/不可编码的偏移：用 scratch 寄存器计算地址，然后用 [scratch, #0]
             BE::Register scratch = pickScratchBase(dataReg);
             emitLoadImm64(out, scratch, static_cast<unsigned long long>(off));
             out.push_back(createInstr3(Operator::ADD, new RegOperand(scratch), new RegOperand(BE::AArch64::PR::sp), new RegOperand(scratch)));
@@ -151,7 +151,7 @@ namespace BE::AArch64::Passes::Lowering
                 {
                     auto* tin = static_cast<Instr*>(inst);
 
-                    // Handle fiop-based address materialization (typically: ADD rd, sp, FI)
+                    // 处理基于 fiop 的地址生成（通常为：ADD rd, sp, FI）
                     if (tin->use_fiops && tin->fiop)
                     {
                         if (auto* fio = dynamic_cast<FrameIndexOperand*>(tin->fiop))
@@ -163,7 +163,7 @@ namespace BE::AArch64::Passes::Lowering
                                 off = 0;
                             }
 
-                            // Common pattern produced by DAG isel: ADD rd, sp, <fiop>
+                            // DAG isel 常见模式：ADD rd, sp, <fiop>
                             if (tin->op == Operator::ADD && tin->operands.size() >= 2)
                             {
                                 auto* rdOp = dynamic_cast<RegOperand*>(tin->operands[0]);
@@ -182,7 +182,7 @@ namespace BE::AArch64::Passes::Lowering
                                     }
                                     else
                                     {
-                                        // Expand to: movz/movk rd, off; add rd, sp, rd
+                                        // 展开为：movz/movk rd, off; add rd, sp, rd
                                         BE::Register rd = rdOp->reg;
                                         emitLoadImm64(rewritten, rd, static_cast<unsigned long long>(off));
                                         rewritten.push_back(createInstr3(Operator::ADD,
@@ -207,7 +207,7 @@ namespace BE::AArch64::Passes::Lowering
                         }
                     }
 
-                    // Legalize SP-relative LDR/STR offsets that are not encodable.
+                    // 合法化 SP 相对的 LDR/STR 指令中不可编码的偏移量。
                     if ((tin->op == Operator::LDR || tin->op == Operator::STR) && tin->operands.size() >= 2)
                     {
                         auto* regOp = dynamic_cast<RegOperand*>(tin->operands[0]);
@@ -218,7 +218,7 @@ namespace BE::AArch64::Passes::Lowering
                             int scale = regScale(regOp->reg);
                             if (off < 0 || !BE::AArch64::fitsUnsignedScaledOffset(off, scale))
                             {
-                                // Replace with scratch-based addressing.
+                                // 替换为基于 scratch 的寻址方式。
                                 Operator mem = tin->op;
                                 BE::Register data = regOp->reg;
                                 emitSpillAccess(rewritten, mem, data, off);
